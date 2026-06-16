@@ -463,6 +463,14 @@
 @media (max-width:560px){.c-sched{display:none}.c-bal{width:76px;flex-basis:76px}.c-stat{width:88px;flex:0 0 88px}.filters{gap:6px}.fchip{padding:6px 11px;font-size:12.5px}}
 @media (max-width:560px){.content{padding:18px 14px 0}.kgrid{gap:10px}.dw-facts{gap:12px}}
 .dw-dateinput{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:14px;margin-bottom:8px}
+.unbilled{display:flex;align-items:center;gap:12px;justify-content:space-between;background:var(--amber-soft);border:1px solid #f0d9a8;border-radius:10px;padding:11px 13px;margin-top:12px;font-size:13px}
+.ipill{font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;text-transform:uppercase;letter-spacing:.3px;vertical-align:middle}
+.chkrow{display:flex;gap:18px;align-items:center;font-weight:550;color:var(--ink-2);font-size:13.5px}
+.chkrow input{margin-right:5px;vertical-align:middle}
+.eg{margin-right:3px;font-size:11px}
+.callegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted);font-weight:500}
+.callegend .lgd{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
+#daysPick button{min-width:38px}
 </style>
 </head>
 <body>
@@ -528,7 +536,7 @@ function initials(n){const p=n.replace(/[^a-zA-Z ]/g,"").trim().split(/\s+/);ret
 function colorFor(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length];}
 function mkUnits(type,count,prefix){const a=[];for(let i=0;i<count;i++)a.push({label:prefix+String(i+1).padStart(3,"0"),type,washed:false,washedAt:null,issue:null});return a;}
 function acct(o){const tr=mkUnits("trailer",o.trailers||0,o.trPrefix||"T");const tk=mkUnits("truck",o.trucks||0,o.tkPrefix||"C");
-  return{id:uid(),name:o.name,location:o.location||"",contact:o.contact||"",phone:o.phone||"",email:o.email||"",freq:o.freq,avgMin:o.avgMin,lastVisit:o.lastVisit,crew:o.crew||[],units:[...tr,...tk],log:o.log||[],active:{},shifts:o.shifts||[],priority:o.priority||"med",distanceMi:o.distanceMi||0,billRate:o.billRate||0,stage:o.stage||"active",contractValue:o.contractValue||0,terms:o.terms||"Net 30",po:o.po||"",since:o.since||"",contacts:o.contacts||[],activity:o.activity||[],invoices:o.invoices||[]};}
+  return{id:uid(),name:o.name,location:o.location||"",contact:o.contact||"",phone:o.phone||"",email:o.email||"",freq:o.freq,avgMin:o.avgMin,lastVisit:o.lastVisit,crew:o.crew||[],units:[...tr,...tk],log:o.log||[],active:{},shifts:o.shifts||[],priority:o.priority||"med",distanceMi:o.distanceMi||0,billRate:o.billRate||0,stage:o.stage||"active",contractValue:o.contractValue||0,terms:o.terms||"Net 30",po:o.po||"",since:o.since||"",contacts:o.contacts||[],activity:o.activity||[],invoices:o.invoices||[],scheduleMode:o.scheduleMode||"interval",days:o.days||[],everyWeeks:o.everyWeeks||1,billingMethod:o.billingMethod||"per-visit",billingEmail:o.billingEmail||"",autoBill:(o.autoBill!==false),reviewRequired:(o.reviewRequired===true)};}
 function seed(){const T=todayISO();var __a=[
   acct({name:"Steelcase",location:"42 Industrial Park Dr, PA",contact:"Sarah Mitchell",phone:"570-555-0142",email:"sarah@steelcase.com",freq:7,avgMin:240,lastVisit:addDays(T,-6),trailers:40,trucks:25,trPrefix:"540",tkPrefix:"SC-",crew:["Bob","Ryan"],log:[{date:addDays(T,-6),crew:["Bob","Ryan"],done:62,total:65},{date:addDays(T,-13),crew:["Bob","Kenny"],done:65,total:65}]}),
   acct({name:"Wise",location:"890 Commerce Blvd, PA",contact:"Mike Johnson",phone:"570-555-0198",email:"mike@wise.com",freq:7,avgMin:420,lastVisit:addDays(T,-6),trailers:100,trucks:0,trPrefix:"W",crew:["Kenny","John"],log:[{date:addDays(T,-6),crew:["Kenny","John"],done:68,total:100},{date:addDays(T,-13),crew:["Bob","Ryan"],done:75,total:100}]}),
@@ -549,7 +557,7 @@ let DB=load();
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}const s=seed();try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}return s;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 
-function nextDue(a){if(a.nextOverride)return a.nextOverride;return a.lastVisit?addDays(a.lastVisit,a.freq):todayISO();}
+function nextDue(a){if(a.nextOverride)return a.nextOverride;if(a.scheduleMode==="weekdays"&&a.days&&a.days.length)return nextWeekdayDue(a);return a.lastVisit?addDays(a.lastVisit,a.freq):todayISO();}
 function statusOf(a){const d=daysBetween(todayISO(),nextDue(a));
   if(d<0)return{k:"over",t:(-d)+"d overdue",c:"s-over",col:"var(--red)"};
   if(d===0)return{k:"due",t:"Due today",c:"s-due",col:"var(--amber)"};
@@ -589,7 +597,7 @@ function renderAccounts(){
     '<div class="list">'+list.map(function(a){var st=statusOf(a),bal=acctOutstanding(a);
       return '<div class="row" data-id="'+a.id+'">'+
         '<div class="c-acct" style="display:flex;align-items:center;gap:12px;min-width:0">'+av(a.name)+'<div style="min-width:0"><div class="nm">'+a.name+(a.stage&&a.stage!=="active"?' '+stageBadge(a.stage):"")+'</div><div class="sub">'+(a.contact?esc(a.contact):"")+(a.contact&&a.location?" · ":"")+(a.location||"")+'</div></div></div>'+
-        '<div class="c-sched"><span class="pill">'+FREQ[a.freq]+'</span></div>'+
+        '<div class="c-sched"><span class="pill">'+freqLabel(a)+'</span></div>'+
         '<div class="c-last" style="color:var(--muted)">'+fmt(a.lastVisit)+'</div>'+
         '<div class="c-due" style="color:var(--ink-2)">'+fmtLong(nextDue(a))+'</div>'+
         '<div class="c-bal">'+(bal>0?'<span style="color:var(--red);font-weight:700">'+money(bal)+'</span>':'<span style="color:var(--faint)">—</span>')+'</div>'+
@@ -625,9 +633,7 @@ function calNav(dir){if(!calRef)calRef=todayISO();
   if(calView==="month"){var d=new Date(calRef+"T00:00:00");d.setMonth(d.getMonth()+dir);calRef=isoOf(d);}
   else if(calView==="week"){calRef=addDays(calRef,dir*7);}else{calRef=addDays(calRef,dir);}renderSchedule();}
 function openDay(iso){calRef=iso;calView="day";renderSchedule();}
-function calEvents(startISO,endISO){var ev={};DB.forEach(function(a){if(!a.lastVisit||!a.freq)return;var cur=a.lastVisit,g=0;
-  while(cur<startISO&&g<700){cur=addDays(cur,a.freq);g++;}
-  while(cur<=endISO&&g<700){(ev[cur]=ev[cur]||[]).push(a);cur=addDays(cur,a.freq);g++;}});return ev;}
+function calEvents(startISO,endISO){var ev={};DB.forEach(function(a){if(a.scheduleMode==="weekdays"&&a.days&&a.days.length){var cur=startISO,g=0;while(cur<=endISO&&g<70){var d=new Date(cur+"T00:00:00");if(a.days.indexOf(d.getDay())>-1&&onWeek(a,cur))(ev[cur]=ev[cur]||[]).push(a);cur=addDays(cur,1);g++;}return;}if(!a.lastVisit||!a.freq)return;var cur=a.lastVisit,g=0;while(cur<startISO&&g<700){cur=addDays(cur,a.freq);g++;}while(cur<=endISO&&g<700){(ev[cur]=ev[cur]||[]).push(a);cur=addDays(cur,a.freq);g++;}});return ev;}
 function calHeader(title){
   return '<div class="calbar"><div class="calttl">'+title+'</div><div class="calright">'+
     '<div class="seg2">'+["month","week","day"].map(function(v){return '<button class="'+(calView===v?"on":"")+'" onclick="setCalView(\''+v+'\')">'+v.charAt(0).toUpperCase()+v.slice(1)+'</button>';}).join("")+'</div>'+
@@ -651,9 +657,9 @@ function renderCalMonth(){
     var shown=items.slice(0,ooo.length?2:3),extra=items.length-shown.length;
     html+='<div class="cell'+(inM?"":" out")+(isT?" today":"")+'" data-day="'+k+'"><div class="cn">'+dt.getDate()+'</div><div class="evs">'+
       ooo.map(function(t){return '<div class="ooo" title="'+esc(t.reason||"Time off")+'">'+t.worker+' OOO</div>';}).join("")+
-      shown.map(function(a){return '<button class="evt" data-id="'+a.id+'" title="'+esc(a.name)+'"><span class="ed" style="background:'+colorFor(a.name)+'"></span>'+esc(a.name)+'</button>';}).join("")+
+      shown.map(function(a){var es=evStatus(a,k);return '<button class="evt" data-id="'+a.id+'" title="'+esc(a.name)+' — '+es.label+'"><span class="ed" style="background:'+es.col+'"></span>'+(es.glyph?'<b class="eg" style="color:'+es.col+'">'+es.glyph+'</b>':'')+esc(a.name)+'</button>';}).join("")+
       (extra>0?'<button class="evmore" data-day="'+k+'">+'+extra+' more</button>':"")+'</div></div>';});
-  html+='</div></div>';document.getElementById("scheduleView").innerHTML=html;wireCal();}
+  html+='</div></div>'+calLegend();document.getElementById("scheduleView").innerHTML=html;wireCal();}
 function renderCalWeek(){
   var ref=new Date(calRef+"T00:00:00"),weekStart=addDays(calRef,-ref.getDay()),days=[];
   for(var i=0;i<7;i++)days.push(addDays(weekStart,i));
@@ -663,7 +669,7 @@ function renderCalWeek(){
   var html=calHeader(title)+'<div class="week">'+days.map(function(k){var dt=new Date(k+"T00:00:00"),items=ev[k]||[],isT=k===todayKey,ooo=oooOn(k);
     return '<div class="wcol'+(isT?" today":"")+'"><div class="wh" data-day="'+k+'"><div class="wd">'+DOWS[dt.getDay()]+'</div><div class="wn">'+dt.getDate()+'</div></div><div class="wbody">'+
       ooo.map(function(t){return '<div class="ooo" title="'+esc(t.reason||"Time off")+'">'+t.worker+' OOO</div>';}).join("")+
-      (items.length?items.map(function(a){var c=counts(a);return '<button class="stop" data-id="'+a.id+'" style="border-left-color:'+colorFor(a.name)+'"><div class="sn">'+esc(a.name)+'</div><div class="ss">'+c.total+' units · ~'+hrs(a.avgMin)+'</div></button>';}).join(""):(ooo.length?"":'<div class="wempty">—</div>'))+'</div></div>';}).join("")+'</div>';
+      (items.length?items.map(function(a){var c=counts(a),es=evStatus(a,k);return '<button class="stop" data-id="'+a.id+'" style="border-left-color:'+es.col+'"><div class="sn">'+(es.glyph?es.glyph+' ':'')+esc(a.name)+'</div><div class="ss">'+es.label+' · '+c.total+' units</div></button>';}).join(""):(ooo.length?"":'<div class="wempty">—</div>'))+'</div></div>';}).join("")+'</div>';
   document.getElementById("scheduleView").innerHTML=html;wireCal();}
 function renderCalDay(){
   var k=calRef,dt=new Date(k+"T00:00:00"),ev=calEvents(k,k),items=ev[k]||[],ooo=oooOn(k);
@@ -672,7 +678,7 @@ function renderCalDay(){
   if(ooo.length)html+='<div class="oooBanner">Out of office: '+ooo.map(function(t){return t.worker+(t.reason?" ("+esc(t.reason)+")":"");}).join(" · ")+'</div>';
   html+='<div class="dayhead"><b>'+items.length+'</b> '+(items.length===1?"stop":"stops")+(items.length?' · ~'+hrs(totMin)+' of work scheduled':'')+'</div>';
   html+='<div class="list">'+(items.length?items.map(function(a){var c=counts(a);return '<div class="row stop" data-id="'+a.id+'">'+av(a.name)+
-    '<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+FREQ[a.freq]+' · '+(c.trailers?c.trailers+" trailers ":"")+(c.trucks?c.trucks+" trucks":"")+'</div></div>'+
+    '<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+freqLabel(a)+' · '+(c.trailers?c.trailers+" trailers ":"")+(c.trucks?c.trucks+" trucks":"")+'</div></div>'+
     crewStack(a.crew)+'<div class="col" style="width:84px;text-align:right;color:var(--muted)">~'+hrs(a.avgMin)+'</div>'+statusHTML(statusOf(a))+'</div>';}).join(""):'<div class="empty">No stops scheduled this day.</div>')+'</div>';
   document.getElementById("scheduleView").innerHTML=html;wireCal();}
 
@@ -698,7 +704,7 @@ function openDetail(id){curAcct=id;uTab="trailer";
           :'<div class="empty">No visits logged yet.</div>')+'</div>'+activityHTML(a)+
     '</div><div>'+
       financialsHTML(a)+'<div class="block"><h3>Schedule</h3><div class="facts">'+
-        '<div class="fact"><div class="l">Frequency</div><div class="v">'+FREQ[a.freq]+'</div></div>'+
+        '<div class="fact"><div class="l">Frequency</div><div class="v">'+freqLabel(a)+'</div></div>'+
         '<div class="fact"><div class="l">Avg time</div><div class="v">'+hrs(a.avgMin)+'</div></div>'+
         '<div class="fact"><div class="l">Last washed</div><div class="v">'+fmt(a.lastVisit)+'</div></div>'+
         '<div class="fact"><div class="l">Next due</div><div class="v" style="color:'+st.col+'">'+fmt(nextDue(a))+'</div></div></div></div>'+
@@ -744,31 +750,37 @@ function flagUnit(i){const a=DB.find(x=>x.id===curAcct);const u=a.units[i];
 function resetVisit(id){const a=DB.find(x=>x.id===id);a.units.forEach(u=>{u.washed=false;u.washedAt=null;});save();renderUnits();toast("Visit reset");}
 function addUnit(id){const a=DB.find(x=>x.id===id);const n=prompt(uTab+" number:");if(!n)return;a.units.push({label:String(n).trim(),type:uTab,washed:false,washedAt:null,issue:null});save();openDetail(id);}
 function completeVisit(id){var a=DB.find(function(x){return x.id===id;});var c=counts(a);if(c.washed===0){toast("Mark some units first");return;}
-  var entry={date:todayISO(),crew:a.crew||[],done:c.washed,total:c.total,units:a.units.filter(function(u){return u.washed;}).map(function(u){return u.label;}),issues:a.units.filter(function(u){return u.issue;}).map(function(u){return {label:u.label,issue:u.issue};})};
-  a.log.unshift(entry);a.lastVisit=todayISO();a.nextOverride=null;a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:Math.round(revPerVisit(a))||300,date:todayISO(),dueDate:addDays(todayISO(),30),paid:false});
+  var entry={date:todayISO(),crew:a.crew||[],done:c.washed,total:c.total,units:a.units.filter(function(u){return u.washed;}).map(function(u){return u.label;}),issues:a.units.filter(function(u){return u.issue;}).map(function(u){return {label:u.label,issue:u.issue};}),amount:Math.round(revPerVisit(a))||300,billed:false};
+  a.log.unshift(entry);a.lastVisit=todayISO();a.nextOverride=null;if((a.billingMethod||"per-visit")==="per-visit"&&a.autoBill!==false){a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:entry.amount,date:todayISO(),dueDate:addDays(todayISO(),termDays(a)),paid:false,status:a.reviewRequired?"draft":"sent"});entry.billed=true;}
   a.units.forEach(function(u){u.washed=false;u.washedAt=null;});save();openReport(a,entry);}
 
 let pickedCrew=[];
-function openModal(id){const a=id?DB.find(x=>x.id===id):null,isNew=!a;pickedCrew=a?[...(a.crew||[])]:[];
+function openModal(id){const a=id?DB.find(x=>x.id===id):null,isNew=!a;pickedCrew=a?[...(a.crew||[])]:[];pickedDays=a&&a.days?a.days.slice():[];
   const fo=Object.entries(FREQ).map(([d,n])=>'<option value="'+d+'" '+(a&&a.freq==+d?"selected":"")+'>'+n+'</option>').join("");
   openScrim('<div class="modal"><div class="mh"><h3>'+(isNew?"New account":"Edit "+a.name)+'</h3></div><div class="mb">'+
     '<label class="fld">Account name<input id="f_name" value="'+(a?esc(a.name):"")+'" placeholder="e.g. Steelcase"></label>'+
     '<label class="fld">Address / location<input id="f_loc" value="'+(a?esc(a.location):"")+'"></label>'+
     '<div class="two"><label class="fld">Contact<input id="f_contact" value="'+(a?esc(a.contact):"")+'"></label><label class="fld">Phone<input id="f_phone" value="'+(a?esc(a.phone):"")+'"></label></div>'+
     '<label class="fld">Email<input id="f_email" value="'+(a?esc(a.email):"")+'"></label>'+
-    '<div class="two"><label class="fld">Frequency<select id="f_freq">'+fo+'</select></label><label class="fld">Avg time (min)<input id="f_min" type="number" min="0" value="'+(a?a.avgMin:180)+'"></label></div>'+
+    '<label class="fld">Service schedule</label><div class="two"><select id="f_smode" onchange="toggleSchedUI()"><option value="interval"'+(a&&a.scheduleMode==="weekdays"?"":" selected")+'>By interval</option><option value="weekdays"'+(a&&a.scheduleMode==="weekdays"?" selected":"")+'>Specific days</option></select><input id="f_min" type="number" min="0" value="'+(a?a.avgMin:180)+'" placeholder="Avg minutes"></div>'+
+'<div id="schedInterval"'+(a&&a.scheduleMode==="weekdays"?' style="display:none"':"")+'><label class="fld">Frequency<select id="f_freq">'+fo+'</select></label></div>'+
+'<div id="schedWeekdays"'+(a&&a.scheduleMode==="weekdays"?"":' style="display:none"')+'><label class="fld">Service days<div class="pick" id="daysPick">'+DOW3.map(function(dn,di){return '<button type="button" data-d="'+di+'" class="'+(a&&a.days&&a.days.indexOf(di)>-1?"on":"")+'">'+dn+'</button>';}).join("")+'</div></label><label class="fld">Repeat<select id="f_everyweeks"><option value="1"'+(!a||!a.everyWeeks||a.everyWeeks==1?" selected":"")+'>Every week</option><option value="2"'+(a&&a.everyWeeks==2?" selected":"")+'>Every 2 weeks</option></select></label></div>'+
     '<div class="two"><label class="fld">Priority<select id="f_prio"><option value="high"'+(a&&a.priority==="high"?" selected":"")+'>High</option><option value="med"'+(!a||!a.priority||a.priority==="med"?" selected":"")+'>Medium</option><option value="low"'+(a&&a.priority==="low"?" selected":"")+'>Low</option></select></label><label class="fld">Miles from HQ<input id="f_dist" type="number" min="0" value="'+(a?(a.distanceMi||0):0)+'"></label></div>'+
     '<label class="fld">Bill rate ($ per unit)<input id="f_rate" type="number" min="0" step="0.5" value="'+(a?(a.billRate||0):0)+'"></label>'+
     '<div class="two"><label class="fld">Stage<select id="f_stage"><option value="active"'+(!a||!a.stage||a.stage==="active"?" selected":"")+'>Active</option><option value="prospect"'+(a&&a.stage==="prospect"?" selected":"")+'>Prospect</option><option value="paused"'+(a&&a.stage==="paused"?" selected":"")+'>Paused</option><option value="lost"'+(a&&a.stage==="lost"?" selected":"")+'>Lost</option></select></label><label class="fld">Client since<input id="f_since" type="date" value="'+(a&&a.since?a.since:"")+'"></label></div>'+
-    '<div class="two"><label class="fld">Contract value ($/mo)<input id="f_cval" type="number" min="0" value="'+(a?(a.contractValue||0):0)+'"></label><label class="fld">Payment terms<input id="f_terms" value="'+(a?esc(a.terms||"Net 30"):"Net 30")+'"></label></div>'+
-    '<label class="fld">PO number<input id="f_po" value="'+(a?esc(a.po||""):"")+'"></label>'+
+    '<div class="two"><label class="fld">Billing method<select id="f_bmethod">'+billOpts(a)+'</select></label><label class="fld">Payment terms<select id="f_terms">'+termOpts(a)+'</select></label></div>'+
+'<label class="fld">Billing email<input id="f_bemail" value="'+(a?esc(a.billingEmail||""):"")+'" placeholder="invoices@company.com"></label>'+
+'<div class="two"><label class="fld">Contract value ($/mo)<input id="f_cval" type="number" min="0" value="'+(a?(a.contractValue||0):0)+'"></label><label class="fld">PO number<input id="f_po" value="'+(a?esc(a.po||""):"")+'"></label></div>'+
+'<label class="fld"><span class="chkrow"><span><input type="checkbox" id="f_autobill" '+(!a||a.autoBill!==false?"checked":"")+'> Auto-create invoice</span><span><input type="checkbox" id="f_review" '+(a&&a.reviewRequired?"checked":"")+'> Review before sending</span></span></label>'+
+    
     '<label class="fld">Last washed<input id="f_last" type="date" value="'+(a?a.lastVisit:todayISO())+'"></label>'+
     (isNew?'<div class="two"><label class="fld"># Trailers<input id="f_tr" type="number" min="0" value="0"></label><label class="fld"># Trucks<input id="f_tk" type="number" min="0" value="0"></label></div>':"")+
     '<label class="fld">Crew<div class="pick" id="crewPick">'+CREW.map(m=>'<button type="button" data-m="'+m+'" class="'+(pickedCrew.includes(m)?"on":"")+'">'+m+'</button>').join("")+'</div></label>'+
     '</div><div class="mf"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn primary" id="saveBtn">'+(isNew?"Add account":"Save")+'</button></div></div>');
   document.querySelectorAll("#crewPick button").forEach(b=>b.onclick=()=>{const m=b.dataset.m;if(pickedCrew.includes(m))pickedCrew=pickedCrew.filter(x=>x!==m);else pickedCrew.push(m);b.classList.toggle("on");});
+  document.querySelectorAll("#daysPick button").forEach(function(b){b.onclick=function(){var dd=+b.dataset.d;if(pickedDays.indexOf(dd)>-1)pickedDays=pickedDays.filter(function(x){return x!==dd;});else pickedDays.push(dd);b.classList.toggle("on");};});
   document.getElementById("saveBtn").onclick=()=>{const name=v("f_name").trim();if(!name){toast("Name is required");return;}
-    const base={name,location:v("f_loc").trim(),contact:v("f_contact").trim(),phone:v("f_phone").trim(),email:v("f_email").trim(),freq:+v("f_freq"),avgMin:+v("f_min")||0,lastVisit:v("f_last")||todayISO(),crew:[...pickedCrew],priority:v("f_prio"),distanceMi:+v("f_dist")||0,billRate:+v("f_rate")||0,stage:v("f_stage"),since:v("f_since"),contractValue:+v("f_cval")||0,terms:v("f_terms").trim(),po:v("f_po").trim()};
+    const base={name,location:v("f_loc").trim(),contact:v("f_contact").trim(),phone:v("f_phone").trim(),email:v("f_email").trim(),freq:+v("f_freq"),avgMin:+v("f_min")||0,lastVisit:v("f_last")||todayISO(),crew:[...pickedCrew],priority:v("f_prio"),distanceMi:+v("f_dist")||0,billRate:+v("f_rate")||0,stage:v("f_stage"),since:v("f_since"),contractValue:+v("f_cval")||0,terms:v("f_terms"),po:v("f_po").trim(),scheduleMode:v("f_smode"),days:pickedDays.slice(),everyWeeks:+v("f_everyweeks")||1,billingMethod:v("f_bmethod"),billingEmail:v("f_bemail").trim(),autoBill:document.getElementById("f_autobill").checked,reviewRequired:document.getElementById("f_review").checked};
     if(isNew){DB.push(acct({...base,trailers:+v("f_tr")||0,trucks:+v("f_tk")||0,trPrefix:"T",tkPrefix:"C"}));save();closeScrim();setView("accounts");toast("Account added");}
     else{Object.assign(a,base);save();closeScrim();openDetail(a.id);toast("Saved");}};
 }
@@ -786,7 +798,7 @@ function openReport(a,e){
   openScrim('<div class="modal report"><div class="rprint" id="rprint">'+
     '<div class="rhd"><div class="rbrand"><div class="mark2">PM</div><div><b>Penn Mobile Wash</b><div class="rmuted">Service Report</div></div></div><div class="rdate">'+fmtLong(e.date)+'</div></div>'+
     '<div class="rtitle"><h2>'+a.name+'</h2><div class="rmuted">'+(a.location||"")+'</div></div>'+
-    '<div class="rrow"><div><div class="rk">Units cleaned</div><div class="rv">'+e.done+' of '+e.total+'</div></div><div><div class="rk">Crew</div><div class="rv">'+((e.crew||[]).join(", ")||"-")+'</div></div><div><div class="rk">Service</div><div class="rv">'+FREQ[a.freq]+'</div></div></div>'+
+    '<div class="rrow"><div><div class="rk">Units cleaned</div><div class="rv">'+e.done+' of '+e.total+'</div></div><div><div class="rk">Crew</div><div class="rv">'+((e.crew||[]).join(", ")||"-")+'</div></div><div><div class="rk">Service</div><div class="rv">'+freqLabel(a)+'</div></div></div>'+
     '<div class="rlist"><div class="rk">Truck / trailer list</div><div class="rchips">'+chips+'</div></div>'+iss+
     '</div><div class="mf" style="border-top:1px solid var(--line);flex-wrap:wrap;gap:8px">'+
       '<button class="btn ghost" id="rcloseBtn">Close</button>'+
@@ -914,7 +926,7 @@ function financialsHTML(a){var rev=revPerVisit(a),lab=laborCostPerVisit(a),fuel=
     '<div class="finrow"><span>Drive / fuel ('+(a.distanceMi||0)+' mi round-trip)</span><b style="color:var(--muted)">-'+money(fuel)+'</b></div>'+
     '<div class="finrow total"><span>Net profit</span><b style="color:'+(net>=0?"var(--green)":"var(--red)")+'">'+money(net)+'</b></div>'+
     '<div class="finrow"><span>Margin</span><b>'+mg+'%</b></div>'+
-    '<div class="finmonthly">≈ '+money(netPerVisit(a)*perVisits(a,"month"))+' net per month at '+FREQ[a.freq].toLowerCase()+' service</div></div></div>';}
+    '<div class="finmonthly">≈ '+money(netPerVisit(a)*perVisits(a,"month"))+' net per month at '+freqLabel(a).toLowerCase()+' service</div></div></div>';}
 var moneyPeriod="month";
 function setMoneyPeriod(p){moneyPeriod=p;renderMoney();}
 function renderMoney(){var p=moneyPeriod;document.getElementById("pageSub").textContent="Job costing & profit";
@@ -994,10 +1006,13 @@ function missingAddress(a){return !a.location||a.location==="PA"||a.location==="
 function sevStyle(s){return s==="red"?"color:var(--red);background:var(--red-soft)":s==="amber"?"color:var(--amber);background:var(--amber-soft)":"color:var(--accent);background:var(--accent-soft)";}
 function buildAttention(){var att=[];
   overdueInvoices().forEach(function(o){var late=daysBetween(o.i.dueDate,todayISO());att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',t:"Invoice overdue",d:o.a.name+" · "+money(o.i.amount)+" · "+late+"d late",id:o.a.id});});
-  DB.filter(function(a){return !a.crew||!a.crew.length;}).forEach(function(a){att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.2 3-4.6 6-4.6"/><path d="M15.5 11.5l2 2 3.5-3.5"/></svg>',t:"No crew assigned",d:a.name+" · "+FREQ[a.freq],id:a.id});});
+  DB.filter(function(a){return !a.crew||!a.crew.length;}).forEach(function(a){att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.2 3-4.6 6-4.6"/><path d="M15.5 11.5l2 2 3.5-3.5"/></svg>',t:"No crew assigned",d:a.name+" · "+freqLabel(a),id:a.id});});
   DB.filter(function(a){return statusOf(a).k==="over";}).sort(function(x,y){return new Date(nextDue(x))-new Date(nextDue(y));}).forEach(function(a){att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',t:"Service overdue",d:a.name+" · "+(-daysBetween(todayISO(),nextDue(a)))+"d past due",id:a.id});});
   DB.filter(function(a){return missingAddress(a);}).slice(0,3).forEach(function(a){att.push({sev:"blue",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',t:"Missing service address",d:a.name,id:a.id});});
   DB.filter(function(a){return counts(a).issues>0;}).forEach(function(a){var n=counts(a).issues;att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 22V4h12l-2 4 2 4H5"/></svg>',t:n+" flagged "+(n>1?"issues":"issue"),d:a.name,id:a.id});});
+  DB.filter(function(a){return unbilledRecords(a).length>0;}).forEach(function(a){var n=unbilledRecords(a).length;att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h6"/></svg>',t:"Completed services unbilled",d:a.name+" \u00b7 "+n+" service"+(n>1?"s":"")+" \u00b7 "+money(unbilledTotal(a)),id:a.id});});
+  DB.forEach(function(a){(a.invoices||[]).forEach(function(i){if(!i.paid&&i.status==="draft")att.push({sev:"blue",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',t:"Draft invoice to review",d:a.name+" \u00b7 "+money(i.amount),id:a.id});});});
+  DB.filter(function(a){return a.nextOverride&&a.nextOverride<todayISO();}).forEach(function(a){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>',t:"Missed rescheduled visit",d:a.name+" \u00b7 was due "+fmt(a.nextOverride),id:a.id});});
   return att;}
 function renderDashboard(){
   var h=new Date().getHours(),g=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
@@ -1032,7 +1047,7 @@ function receivablesHTML(){var ov=overdueInvoices();if(!ov.length&&!totalOutstan
 var custFilter="all";
 function setCustFilter(f){custFilter=f;renderAccounts();}
 function nextInvNum(a){var mx=1000;(a.invoices||[]).forEach(function(i){if(i.n>mx)mx=i.n;});return mx+1;}
-function createInvoice(id){var a=DB.find(function(x){return x.id===id;});a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:Math.round(revPerVisit(a))||300,date:todayISO(),dueDate:addDays(todayISO(),30),paid:false});save();openDetail(id);toast("Invoice created");}
+function createInvoice(id){var a=DB.find(function(x){return x.id===id;});a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:Math.round(revPerVisit(a))||300,date:todayISO(),dueDate:addDays(todayISO(),30),paid:false,status:"draft"});save();openDetail(id);toast("Invoice created");}
 function jobStatusOf(a){if((a.log||[]).some(function(l){return l.date===todayISO();}))return {k:"done",t:"Completed today",c:"s-ok",col:"var(--green)"};var active=a.active&&Object.keys(a.active).length>0;if(active||counts(a).washed>0)return {k:"prog",t:"In progress",c:"s-due",col:"var(--amber)"};return statusOf(a);}
 function invoicesHTML(a){var inv=a.invoices||[];var rows=inv.length?'<div class="info">'+inv.map(function(i,k){var od=isInvOverdue(i);return '<div class="ir" style="align-items:center"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' \u00b7 '+money(i.amount)+'</div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue \u00b7 due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div><button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Mark unpaid":"Mark paid")+'</button></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div>';
   return '<div class="block"><h3>Invoices</h3>'+rows+'<button class="btn sm" style="margin-top:12px" onclick="createInvoice(\''+a.id+'\')">+ New invoice</button></div>';}
@@ -1040,13 +1055,50 @@ function toggleInvoice(id,k){var a=DB.find(function(x){return x.id===id;});if(a.
 function openJob(id){var a=DB.find(function(x){return x.id===id;});if(!a)return;var st=jobStatusOf(a),c=counts(a);
   document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(a.name)+'<div style="min-width:0"><div class="dw-nm">'+a.name+'</div><div class="dw-loc">'+(a.location||"No address")+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
    '<div class="dw-b"><div style="margin-bottom:6px">'+statusHTML(st)+'</div>'+
-   '<div class="dw-facts"><div><span>Service</span><b>'+FREQ[a.freq]+'</b></div><div><span>Units</span><b>'+c.total+'</b></div><div><span>Est. time</span><b>'+hrs(a.avgMin)+'</b></div><div><span>Next due</span><b style="color:'+st.col+'">'+fmt(nextDue(a))+'</b></div></div>'+
+   '<div class="dw-facts"><div><span>Service</span><b>'+freqLabel(a)+'</b></div><div><span>Units</span><b>'+c.total+'</b></div><div><span>Est. time</span><b>'+hrs(a.avgMin)+'</b></div><div><span>Next due</span><b style="color:'+st.col+'">'+fmt(nextDue(a))+'</b></div></div>'+
    '<div class="dw-sec">Crew</div>'+((a.crew&&a.crew.length)?'<div class="chips">'+a.crew.map(function(m){return '<span class="chip2"><span class="ca" style="background:var(--navy)">'+initials(m)+'</span>'+m+'</span>';}).join("")+'</div>':'<div class="dw-warn">⚠ No crew assigned</div>')+
    '<div class="dw-sec">Reschedule</div><input type="date" id="dwDate" value="'+nextDue(a)+'" class="dw-dateinput"><div class="dw-resched"><button class="btn sm" onclick="reschedule(\''+a.id+'\',\'once\')">Just this visit</button><button class="btn sm" onclick="reschedule(\''+a.id+'\',\'series\')">This + future</button></div>'+
    '</div><div class="dw-f"><button class="btn" onclick="closeJob()">Close</button><button class="btn primary" onclick="var i=\''+a.id+'\';closeJob();openDetail(i)">Open customer</button></div>';
   document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
 function closeJob(){document.getElementById("drawer").classList.add("hidden");document.getElementById("drawerScrim").classList.add("hidden");}
 function reschedule(id,mode){var a=DB.find(function(x){return x.id===id;});var d=document.getElementById("dwDate").value;if(!d)return;if(mode==="series"){a.lastVisit=addDays(d,-a.freq);a.nextOverride=null;toast("Recurring schedule moved to "+fmt(d));}else{a.nextOverride=d;toast("This visit moved to "+fmt(d));}save();closeJob();if(curView==="schedule")renderSchedule();if(curView==="dashboard")renderDashboard();}
+var DOW3=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var BILLING={"per-visit":"Per visit","weekly":"Weekly","biweekly":"Bi-weekly","monthly":"Monthly","manual":"Manual"};
+var pickedDays=[];
+function weekIndex(iso){return Math.floor((new Date(iso+"T00:00:00")-new Date("2026-01-04T00:00:00"))/604800000);}
+function onWeek(a,iso){var ev=a.everyWeeks||1;if(ev<=1)return true;return ((((weekIndex(iso))%ev)+ev)%ev)===0;}
+function nextWeekdayDue(a){var cur=a.lastVisit?addDays(a.lastVisit,1):todayISO();for(var i=0;i<70;i++){var d=new Date(cur+"T00:00:00");if(a.days.indexOf(d.getDay())>-1&&onWeek(a,cur))return cur;cur=addDays(cur,1);}return cur;}
+function freqLabel(a){if(a.scheduleMode==="weekdays"&&a.days&&a.days.length){var s=a.days.slice().sort(function(x,y){return x-y;}).map(function(d){return DOW3[d];}).join(", ");return (a.everyWeeks>1?"Every "+a.everyWeeks+" wks · ":"")+s;}return FREQ[a.freq]||a.freq+"d";}
+function billOpts(a){var val=a&&a.billingMethod?a.billingMethod:"per-visit";return Object.keys(BILLING).map(function(k){return '<option value="'+k+'"'+(val===k?" selected":"")+'>'+BILLING[k]+'</option>';}).join("");}
+function termOpts(a){var val=a&&a.terms?a.terms:"Net 30";var opts=["Due on receipt","Net 15","Net 30","Net 45"];if(opts.indexOf(val)<0)opts.unshift(val);return opts.map(function(t){return '<option'+(val===t?" selected":"")+'>'+t+'</option>';}).join("");}
+function termDays(a){var t=(a&&a.terms)||"Net 30";if(/receipt/i.test(t))return 0;var m=t.match(/(\d+)/);return m?+m[1]:30;}
+function toggleSchedUI(){var m=document.getElementById("f_smode").value;document.getElementById("schedInterval").style.display=m==="weekdays"?"none":"";document.getElementById("schedWeekdays").style.display=m==="weekdays"?"":"none";}
+function unbilledRecords(a){return (a.log||[]).filter(function(l){return l.billed===false;});}
+function unbilledTotal(a){return unbilledRecords(a).reduce(function(t,l){return t+(l.amount||0);},0);}
+function generateInvoice(id){var a=DB.find(function(x){return x.id===id;});var recs=unbilledRecords(a);if(!recs.length){toast("No unbilled services");return;}var amt=recs.reduce(function(t,l){return t+(l.amount||0);},0);a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:amt,date:todayISO(),dueDate:addDays(todayISO(),termDays(a)),paid:false,status:"draft",period:recs.length+" services"});recs.forEach(function(l){l.billed=true;});save();openDetail(id);toast("Draft invoice created for "+money(amt));}
+function editInvoice(id,k){var a=DB.find(function(x){return x.id===id;});var inv=a.invoices[k];var amt=prompt("Invoice amount ($):",inv.amount);if(amt===null)return;inv.amount=Math.round(+amt)||inv.amount;var due=prompt("Due date (YYYY-MM-DD):",inv.dueDate);if(due)inv.dueDate=due;save();openDetail(id);}
+function markSent(id,k){var a=DB.find(function(x){return x.id===id;});if(a.invoices[k]){a.invoices[k].status="sent";a.invoices[k].sentDate=todayISO();}save();openDetail(id);toast("Invoice marked sent");}
+function evStatus(a,k){var T=todayISO();
+  if((a.log||[]).some(function(l){return l.date===k;}))return {col:"var(--green)",glyph:"✓",label:"Completed"};
+  if(k<T)return {col:colorFor(a.name),glyph:"",label:"Past"};
+  if(!a.crew||!a.crew.length)return {col:"var(--faint)",glyph:"○",label:"Unassigned"};
+  if(k===nextDue(a)&&statusOf(a).k==="over")return {col:"var(--red)",glyph:"!",label:"Missed / overdue"};
+  if(k===T){var js=jobStatusOf(a);if(js.k==="prog")return {col:"var(--amber)",glyph:"•",label:"In progress"};}
+  return {col:colorFor(a.name),glyph:"",label:"Scheduled"};}
+function calLegend(){var items=[["var(--accent)","Scheduled"],["var(--amber)","In progress"],["var(--green)","Completed"],["var(--faint)","Unassigned"],["var(--red)","Missed"]];return '<div class="callegend">'+items.map(function(i){return '<span><span class="lgd" style="background:'+i[0]+'"></span>'+i[1]+'</span>';}).join("")+'</div>';}
+function invoicesHTML(a){
+  var urecs=unbilledRecords(a),unb=unbilledTotal(a),bm=BILLING[a.billingMethod||"per-visit"];
+  var billing='<div class="block"><h3>Billing &amp; payments</h3><div class="facts">'+
+    '<div class="fact"><div class="l">Billing method</div><div class="v">'+bm+'</div></div>'+
+    '<div class="fact"><div class="l">Payment terms</div><div class="v">'+(a.terms||"Net 30")+'</div></div>'+
+    '<div class="fact"><div class="l">Auto-invoice</div><div class="v">'+(a.autoBill!==false?"On":"Off")+(a.reviewRequired?" · review first":"")+'</div></div>'+
+    '<div class="fact"><div class="l">Billing email</div><div class="v" style="word-break:break-all">'+(a.billingEmail||a.email||"—")+'</div></div></div>'+
+    (urecs.length?'<div class="unbilled"><div><b>'+urecs.length+'</b> unbilled service'+(urecs.length>1?"s":"")+' · '+money(unb)+'</div><button class="btn sm primary" onclick="generateInvoice(\''+a.id+'\')">Group into invoice</button></div>':"")+'</div>';
+  var inv=a.invoices||[];
+  var rows=inv.length?'<div class="info">'+inv.map(function(i,k){var od=isInvOverdue(i);var lbl=i.paid?"Paid":(i.status==="sent"?"Sent":"Draft");var lc=i.paid?"var(--green)":(i.status==="sent"?"var(--blue)":"var(--amber)");
+    return '<div class="ir" style="align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' · '+money(i.amount)+' <span class="ipill" style="color:'+lc+';background:var(--soft)">'+lbl+'</span></div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue · was due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div>'+
+    '<button class="ix" onclick="editInvoice(\''+a.id+'\','+k+')">edit</button>'+(!i.paid&&i.status!=="sent"?'<button class="ix" onclick="markSent(\''+a.id+'\','+k+')">send</button>':"")+'<button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Unpay":"Mark paid")+'</button></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div>';
+  return billing+'<div class="block"><h3>Invoices</h3>'+rows+'<button class="btn sm" style="margin-top:12px" onclick="createInvoice(\''+a.id+'\')">+ New invoice</button></div>';}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
