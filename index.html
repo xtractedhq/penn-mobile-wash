@@ -1,4 +1,4 @@
-<!doctype html><!-- build: billing+schedule -->
+<!doctype html><!-- build: calendar+weather -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -589,15 +589,15 @@ html,body{overflow-x:hidden}
   .calnav .btn{flex:1}
   .caljump{width:100%}
   /* month grid -> compact dots */
-  .calgrid .cell{min-height:54px;padding:4px}
-  .cn{font-size:12px;width:auto;height:auto;min-width:20px;padding:1px 3px}
-  .evs{flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center}
-  .evt{font-size:0;padding:0;width:auto;background:none!important;border-radius:0}
-  .evt .ed{margin:0;width:9px;height:9px;border-radius:50%}
-  .evt .eg{display:none}
-  .evmore{font-size:9.5px;width:100%;padding:0}
-  .ooo{font-size:0;padding:0;background:none!important;width:auto}
-  .ooo::before{margin:0;width:9px;height:9px}
+  .calgrid .cell{min-height:64px;padding:3px}
+  .cn{font-size:11px;width:auto;height:auto;min-width:18px;padding:1px 3px}
+  .wx{font-size:11px}
+  .evs{flex-direction:column;gap:2px}
+  .evt{font-size:8.5px;padding:1px 4px;background:var(--soft);border-radius:4px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .evt .ed{margin-right:3px;width:6px;height:6px}
+  .evt .eg{font-size:8px}
+  .evmore{font-size:8.5px;width:100%;padding:0}
+  .ooo{font-size:8px;padding:1px 4px}
   .callegend{font-size:11px;gap:10px}
   /* customer detail: single column + wrapping, no overflow */
   .dcols{grid-template-columns:1fr;gap:0}
@@ -610,6 +610,12 @@ html,body{overflow-x:hidden}
   /* sales pipeline cards full width */
   .grid{grid-template-columns:1fr}
 }
+.cnrow{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.wx{font-size:13px;line-height:1}
+.wxbanner{display:flex;align-items:center;gap:12px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 16px}
+.wxbanner.bad{background:var(--amber-soft);border-color:#f0d9a8}
+.wxbig{font-size:27px;line-height:1;flex:0 0 auto}
+.wxsub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
 </style>
 </head>
 <body>
@@ -789,11 +795,11 @@ function calHeader(title){
     '<button class="btn sm" onclick="addTimeOff()">+ Time off</button>'+'<input type="date" class="caljump" value="'+calRef+'" onchange="calJump(this.value)" title="Jump to date">'+
     '<div class="calnav"><button class="btn sm" onclick="calNav(-1)" title="Previous">&#8249;</button><button class="btn sm" onclick="calToday()">Today</button><button class="btn sm" onclick="calNav(1)" title="Next">&#8250;</button></div></div></div>';}
 function wireCal(){
-  document.querySelectorAll("#scheduleView .evt").forEach(function(b){b.onclick=function(e){e.stopPropagation();openJob(b.dataset.id);};});
+  document.querySelectorAll("#scheduleView .evt").forEach(function(b){b.onclick=function(e){e.stopPropagation();openDay(b.dataset.day);};});
   document.querySelectorAll("#scheduleView .evmore").forEach(function(b){b.onclick=function(e){e.stopPropagation();openDay(b.dataset.day);};});
   document.querySelectorAll("#scheduleView .cell").forEach(function(c){c.onclick=function(){openDay(c.dataset.day);};});
   document.querySelectorAll("#scheduleView .wh").forEach(function(h){h.onclick=function(){openDay(h.dataset.day);};});
-  document.querySelectorAll("#scheduleView .stop").forEach(function(s){s.onclick=function(){openJob(s.dataset.id);};});}
+  document.querySelectorAll("#scheduleView .stop").forEach(function(s){s.onclick=function(){openJob(s.dataset.id,s.dataset.day);};});}
 function renderSchedule(){document.getElementById("pageSub").textContent="Service calendar";if(!calRef)calRef=todayISO();
   if(calView==="week")return renderCalWeek();if(calView==="day")return renderCalDay();return renderCalMonth();}
 function renderCalMonth(){
@@ -804,9 +810,9 @@ function renderCalMonth(){
   var html=calHeader(MONTHS[m]+" "+y)+'<div class="cal"><div class="calhead">'+DOWS.map(function(d){return '<div>'+d+'</div>';}).join("")+'</div><div class="calgrid">';
   cells.forEach(function(dt){var k=isoOf(dt),inM=dt.getMonth()===m,isT=k===todayKey,items=ev[k]||[],ooo=oooOn(k);
     var shown=items.slice(0,ooo.length?2:3),extra=items.length-shown.length;
-    html+='<div class="cell'+(inM?"":" out")+(isT?" today":"")+'" data-day="'+k+'"><div class="cn">'+dt.getDate()+'</div><div class="evs">'+
+    html+='<div class="cell'+(inM?"":" out")+(isT?" today":"")+'" data-day="'+k+'"><div class="cnrow"><div class="cn">'+dt.getDate()+'</div>'+weatherChip(k)+'</div><div class="evs">'+
       ooo.map(function(t){return '<div class="ooo" title="'+esc(t.reason||"Time off")+'">'+t.worker+' OOO</div>';}).join("")+
-      shown.map(function(a){var es=evStatus(a,k);return '<button class="evt" data-id="'+a.id+'" title="'+esc(a.name)+' — '+es.label+'"><span class="ed" style="background:'+es.col+'"></span>'+(es.glyph?'<b class="eg" style="color:'+es.col+'">'+es.glyph+'</b>':'')+esc(a.name)+'</button>';}).join("")+
+      shown.map(function(a){var es=evStatus(a,k);return '<button class="evt" data-id="'+a.id+'" data-day="'+k+'" title="'+esc(a.name)+' — '+es.label+'"><span class="ed" style="background:'+es.col+'"></span>'+(es.glyph?'<b class="eg" style="color:'+es.col+'">'+es.glyph+'</b>':'')+esc(a.name)+'</button>';}).join("")+
       (extra>0?'<button class="evmore" data-day="'+k+'">+'+extra+' more</button>':"")+'</div></div>';});
   html+='</div></div>'+calLegend();document.getElementById("scheduleView").innerHTML=html;wireCal();}
 function renderCalWeek(){
@@ -818,17 +824,17 @@ function renderCalWeek(){
   var html=calHeader(title)+'<div class="week">'+days.map(function(k){var dt=new Date(k+"T00:00:00"),items=ev[k]||[],isT=k===todayKey,ooo=oooOn(k);
     return '<div class="wcol'+(isT?" today":"")+'"><div class="wh" data-day="'+k+'"><div class="wd">'+DOWS[dt.getDay()]+'</div><div class="wn">'+dt.getDate()+'</div></div><div class="wbody">'+
       ooo.map(function(t){return '<div class="ooo" title="'+esc(t.reason||"Time off")+'">'+t.worker+' OOO</div>';}).join("")+
-      (items.length?items.map(function(a){var c=counts(a),es=evStatus(a,k);return '<button class="stop" data-id="'+a.id+'" style="border-left-color:'+es.col+'"><div class="sn">'+(es.glyph?es.glyph+' ':'')+esc(a.name)+'</div><div class="ss">'+es.label+' · '+c.total+' units</div></button>';}).join(""):(ooo.length?"":'<div class="wempty">—</div>'))+'</div></div>';}).join("")+'</div>';
+      (items.length?items.map(function(a){var c=counts(a),es=evStatus(a,k);return '<button class="stop" data-id="'+a.id+'" data-day="'+k+'" style="border-left-color:'+es.col+'"><div class="sn">'+(es.glyph?es.glyph+' ':'')+esc(a.name)+'</div><div class="ss">'+es.label+' · '+c.total+' units</div></button>';}).join(""):(ooo.length?"":'<div class="wempty">—</div>'))+'</div></div>';}).join("")+'</div>';
   document.getElementById("scheduleView").innerHTML=html;wireCal();}
 function renderCalDay(){
   var k=calRef,dt=new Date(k+"T00:00:00"),ev=calEvents(k,k),items=ev[k]||[],ooo=oooOn(k);
   var totMin=items.reduce(function(t,a){return t+a.avgMin;},0);
   var html=calHeader(dt.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}));
   if(ooo.length)html+='<div class="oooBanner">Out of office: '+ooo.map(function(t){return t.worker+(t.reason?" ("+esc(t.reason)+")":"");}).join(" · ")+'</div>';
-  html+='<div class="dayhead"><b>'+items.length+'</b> '+(items.length===1?"stop":"stops")+(items.length?' · ~'+hrs(totMin)+' of work scheduled':'')+'</div>';
-  html+='<div class="list">'+(items.length?items.map(function(a){var c=counts(a);return '<div class="row stop" data-id="'+a.id+'">'+av(a.name)+
+  html+=weatherBanner(k,items.length);html+='<div class="dayhead"><b>'+items.length+'</b> '+(items.length===1?"stop":"stops")+(items.length?' · ~'+hrs(totMin)+' of work scheduled':'')+'</div>';
+  html+='<div class="list">'+(items.length?items.map(function(a){var c=counts(a);return '<div class="row stop" data-id="'+a.id+'" data-day="'+k+'">'+av(a.name)+
     '<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+freqLabel(a)+' · '+(c.trailers?c.trailers+" trailers ":"")+(c.trucks?c.trucks+" trucks":"")+'</div></div>'+
-    crewStack(a.crew)+'<div class="col" style="width:84px;text-align:right;color:var(--muted)">~'+hrs(a.avgMin)+'</div>'+statusHTML(statusOf(a))+'</div>';}).join(""):'<div class="empty">No stops scheduled this day.</div>')+'</div>';
+    crewStack(a.crew)+'<div class="col" style="width:84px;text-align:right;color:var(--muted)">~'+hrs(a.avgMin)+'</div>'+statusHTML(dateStatus(a,k))+'</div>';}).join(""):'<div class="empty">No stops scheduled this day.</div>')+'</div>';
   document.getElementById("scheduleView").innerHTML=html;wireCal();}
 
 function openDetail(id){curAcct=id;uTab="trailer";
@@ -1188,9 +1194,9 @@ function jobStatusOf(a){if((a.log||[]).some(function(l){return l.date===todayISO
 function invoicesHTML(a){var inv=a.invoices||[];var rows=inv.length?'<div class="info">'+inv.map(function(i,k){var od=isInvOverdue(i);return '<div class="ir" style="align-items:center"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' \u00b7 '+money(i.amount)+'</div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue \u00b7 due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div><button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Mark unpaid":"Mark paid")+'</button></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div>';
   return '<div class="block"><h3>Invoices</h3>'+rows+'<button class="btn sm" style="margin-top:12px" onclick="createInvoice(\''+a.id+'\')">+ New invoice</button></div>';}
 function toggleInvoice(id,k){var a=DB.find(function(x){return x.id===id;});if(a.invoices&&a.invoices[k]){a.invoices[k].paid=!a.invoices[k].paid;save();openDetail(id);}}
-function openJob(id){var a=DB.find(function(x){return x.id===id;});if(!a)return;var st=jobStatusOf(a),c=counts(a);
-  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(a.name)+'<div style="min-width:0"><div class="dw-nm">'+a.name+'</div><div class="dw-loc">'+(a.location||"No address")+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
-   '<div class="dw-b"><div style="margin-bottom:6px">'+statusHTML(st)+'</div>'+
+function openJob(id,date){var a=DB.find(function(x){return x.id===id;});if(!a)return;var st=date?dateStatus(a,date):jobStatusOf(a),c=counts(a);
+  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(a.name)+'<div style="min-width:0"><div class="dw-nm">'+a.name+'</div><div class="dw-loc">'+(date?fmt(date)+(a.location?" · "+a.location:""):(a.location||"No address"))+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
+   '<div class="dw-b"><div style="margin-bottom:6px">'+statusHTML(st)+'</div>'+(date?weatherWarn(date):"")+
    '<div class="dw-facts"><div><span>Service</span><b>'+freqLabel(a)+'</b></div><div><span>Units</span><b>'+c.total+'</b></div><div><span>Est. time</span><b>'+hrs(a.avgMin)+'</b></div><div><span>Next due</span><b style="color:'+st.col+'">'+fmt(nextDue(a))+'</b></div></div>'+
    '<div class="dw-sec">Crew</div>'+((a.crew&&a.crew.length)?'<div class="chips">'+a.crew.map(function(m){return '<span class="chip2"><span class="ca" style="background:var(--navy)">'+initials(m)+'</span>'+m+'</span>';}).join("")+'</div>':'<div class="dw-warn">⚠ No crew assigned</div>')+
    '<div class="dw-sec">Reschedule</div><input type="date" id="dwDate" value="'+nextDue(a)+'" class="dw-dateinput"><div class="dw-resched"><button class="btn sm" onclick="reschedule(\''+a.id+'\',\'once\')">Just this visit</button><button class="btn sm" onclick="reschedule(\''+a.id+'\',\'series\')">This + future</button></div>'+
@@ -1569,6 +1575,16 @@ function openEmail(id){var e=EMAILS.find(function(x){return x.id===id;});if(!e)r
     '<div class="emfull-body">'+esc(e.body||e.preview).replace(/\n/g,"<br>")+'</div>'+
     (emailSuggestion(e)?'<div class="emsugg">'+emailSuggestion(e)+'</div>':"")+
     '</div><div class="mf" style="flex-wrap:wrap;gap:8px">'+emailActionsModal(e)+'</div></div>');}
+var WX={sunny:{i:"☀",l:"Sunny",bad:false},cloudy:{i:"☁",l:"Cloudy",bad:false},rain:{i:"🌧",l:"Rain",bad:true},storm:{i:"⛈",l:"Thunderstorms",bad:true}};
+function loadWeather(){var T=todayISO();var conds=["sunny","cloudy","rain","storm","sunny","cloudy","rain"];var temps=[[78,60],[74,58],[66,55],[63,54],[80,61],[75,59],[68,56]];var w={};for(var i=0;i<7;i++){w[addDays(T,i)]={cond:conds[i],hi:temps[i][0],lo:temps[i][1]};}return w;}
+var WEATHER=loadWeather();
+function weatherFor(k){return WEATHER[k]||null;}
+function weatherChip(k){var w=weatherFor(k);if(!w)return"";var x=WX[w.cond];return '<span class="wx'+(x.bad?" bad":"")+'" title="'+x.l+' '+w.hi+'°/'+w.lo+'°">'+x.i+'</span>';}
+function weatherBanner(k,nJobs){var w=weatherFor(k);if(!w)return"";var x=WX[w.cond];
+  var sub=x.bad?(nJobs?"Washing may not hold up in "+x.l.toLowerCase()+". You might catch a drier window midday — otherwise consider moving "+nJobs+" stop"+(nJobs>1?"s":"")+" to a clear day.":x.l+" expected today."):"Good conditions for washing.";
+  return '<div class="wxbanner'+(x.bad?" bad":"")+'"><span class="wxbig">'+x.i+'</span><div><b>'+x.l+' · '+w.hi+'° / '+w.lo+'°</b><div class="wxsub">'+sub+' <span class="emdemo">Demo forecast</span></div></div></div>';}
+function weatherWarn(k){var w=weatherFor(k);if(!w||!WX[w.cond].bad)return"";return '<div class="wxbanner bad" style="margin-bottom:14px"><span class="wxbig">'+WX[w.cond].i+'</span><div><b>'+WX[w.cond].l+' forecast</b><div class="wxsub">Washing may not hold up — aim for a drier window or reschedule below. <span class="emdemo">Demo</span></div></div></div>';}
+function dateStatus(a,k){var es=evStatus(a,k),L=es.label,c=L==="Completed"?"s-ok":(L==="In progress"?"s-due":(/Missed|overdue/i.test(L)?"s-over":"s-soon"));return {t:L,col:es.col,c:c};}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
