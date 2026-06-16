@@ -429,6 +429,39 @@
   .nav button.on{box-shadow:inset 2px 0 0 var(--accent)}
   .brand b{letter-spacing:-.2px}
   body{letter-spacing:-.005em}
+.filters{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.fchip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--ink-2);min-height:34px}
+.fchip:hover{background:var(--soft)}
+.fchip.on{background:var(--navy);color:#fff;border-color:transparent}
+.fchip span{opacity:.55;margin-left:3px;font-variant-numeric:tabular-nums}
+.fchip.on span{opacity:.85}
+.c-last{width:104px;flex:0 0 104px;font-size:13px}
+.c-bal{width:92px;flex:0 0 92px;font-size:13px;font-variant-numeric:tabular-nums}
+.drawer-scrim{position:fixed;inset:0;background:rgba(20,28,40,.42);z-index:58}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:384px;max-width:92vw;background:#fff;border-left:1px solid var(--line);box-shadow:-14px 0 44px rgba(16,24,40,.18);z-index:59;display:flex;flex-direction:column;animation:dwin .18s ease}
+@keyframes dwin{from{transform:translateX(24px);opacity:.5}to{transform:none;opacity:1}}
+.dw-h{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line-2)}
+.dw-t{display:flex;align-items:center;gap:11px;flex:1;min-width:0}
+.dw-nm{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.dw-loc{font-size:12.5px;color:var(--muted)}
+.dw-x{margin-left:auto;width:30px;height:30px;border-radius:8px;color:var(--muted);font-size:13px}
+.dw-x:hover{background:var(--soft)}
+.dw-b{padding:18px 20px;flex:1;overflow:auto}
+.dw-facts{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:16px 0 4px}
+.dw-facts span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--faint);font-weight:650;margin-bottom:3px}
+.dw-facts b{font-size:15px;font-weight:650}
+.dw-sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--faint);margin:22px 0 10px}
+.dw-warn{color:var(--amber);font-size:13px;font-weight:600}
+.dw-resched{display:flex;gap:8px}
+.dw-resched input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:14px}
+.dw-f{padding:14px 20px;border-top:1px solid var(--line-2);display:flex;gap:10px;justify-content:flex-end}
+.btn{min-height:37px}
+.btn.sm{min-height:31px}
+.empty{text-align:center}
+@media (max-width:760px){.c-last{display:none}}
+@media (max-width:520px){.drawer{width:100vw;max-width:100vw}}
+@media (max-width:560px){.c-sched{display:none}.c-bal{width:76px;flex-basis:76px}.c-stat{width:88px;flex:0 0 88px}.filters{gap:6px}.fchip{padding:6px 11px;font-size:12.5px}}
+@media (max-width:560px){.content{padding:18px 14px 0}.kgrid{gap:10px}.dw-facts{gap:12px}}
 </style>
 </head>
 <body>
@@ -476,6 +509,8 @@
   <button data-view="money"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Financials</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="drawer-scrim hidden" id="drawerScrim" onclick="closeJob()"></div>
+<aside class="drawer hidden" id="drawer"></aside>
 <script>
 const KEY="pennwash.v7";
 const FREQ={7:"Weekly",14:"Bi-weekly",21:"Every 3 weeks",30:"Monthly"};
@@ -538,21 +573,27 @@ function setView(v){curView=v;curAcct=null;
 
 /* renderDashboard moved to overview module */
 function renderAccounts(){
-  document.getElementById("pageSub").textContent=DB.length+" accounts";
-  const q=searchQ.toLowerCase();
-  const list=DB.filter(a=>!q||a.name.toLowerCase().includes(q)||(a.contact||"").toLowerCase().includes(q)).sort((x,y)=>new Date(nextDue(x))-new Date(nextDue(y)));
-  const el=document.getElementById("accountsView");
-  if(!list.length){el.innerHTML='<div class="empty">No accounts match “'+searchQ+'”.</div>';return;}
-  el.innerHTML='<div class="thead"><div class="c-acct">Account</div><div class="c-sched">Schedule</div><div class="c-units">Units washed</div><div class="c-crew">Crew</div><div class="c-due">Next due</div><div class="c-stat">Status</div></div>'+
-    '<div class="list">'+list.map(a=>{const st=statusOf(a),c=counts(a),p=pct(a);
+  document.getElementById("pageSub").textContent=DB.length+" customers";
+  var q=searchQ.toLowerCase();
+  var list=DB.filter(function(a){return !q||a.name.toLowerCase().includes(q)||(a.contact||"").toLowerCase().includes(q);});
+  if(custFilter==="due")list=list.filter(function(a){return ["over","due","soon"].includes(statusOf(a).k);});
+  else if(custFilter==="balance")list=list.filter(function(a){return acctOutstanding(a)>0;});
+  else if(custFilter==="prospect")list=list.filter(function(a){return a.stage==="prospect";});
+  list.sort(function(x,y){return new Date(nextDue(x))-new Date(nextDue(y));});
+  var ct={all:DB.length,due:DB.filter(function(a){return ["over","due","soon"].includes(statusOf(a).k);}).length,balance:DB.filter(function(a){return acctOutstanding(a)>0;}).length,prospect:DB.filter(function(a){return a.stage==="prospect";}).length};
+  var chips=[["all","All"],["due","Needs service"],["balance","Outstanding"],["prospect","Prospects"]].map(function(p){return '<button class="fchip'+(custFilter===p[0]?" on":"")+'" onclick="setCustFilter(\''+p[0]+'\')">'+p[1]+' <span>'+ct[p[0]]+'</span></button>';}).join("");
+  var el=document.getElementById("accountsView"),head='<div class="filters">'+chips+'</div>';
+  if(!list.length){el.innerHTML=head+'<div class="empty">No customers match.</div>';return;}
+  el.innerHTML=head+'<div class="thead"><div class="c-acct">Customer</div><div class="c-sched">Frequency</div><div class="c-last">Last service</div><div class="c-due">Next due</div><div class="c-bal">Balance</div><div class="c-stat">Status</div></div>'+
+    '<div class="list">'+list.map(function(a){var st=statusOf(a),bal=acctOutstanding(a);
       return '<div class="row" data-id="'+a.id+'">'+
-        '<div class="c-acct" style="display:flex;align-items:center;gap:12px;min-width:0">'+av(a.name)+'<div style="min-width:0"><div class="nm">'+a.name+(a.stage&&a.stage!=="active"?' '+stageBadge(a.stage):"")+'</div><div class="sub">'+(a.contact||a.location||"")+'</div></div></div>'+
+        '<div class="c-acct" style="display:flex;align-items:center;gap:12px;min-width:0">'+av(a.name)+'<div style="min-width:0"><div class="nm">'+a.name+(a.stage&&a.stage!=="active"?' '+stageBadge(a.stage):"")+'</div><div class="sub">'+(a.contact?esc(a.contact):"")+(a.contact&&a.location?" · ":"")+(a.location||"")+'</div></div></div>'+
         '<div class="c-sched"><span class="pill">'+FREQ[a.freq]+'</span></div>'+
-        '<div class="c-units"><div class="barwrap"><div class="bar"><i style="width:'+p+'%"></i></div><span class="pc">'+c.washed+'/'+c.total+'</span></div></div>'+
-        '<div class="c-crew">'+crewStack(a.crew)+'</div>'+
+        '<div class="c-last" style="color:var(--muted)">'+fmt(a.lastVisit)+'</div>'+
         '<div class="c-due" style="color:var(--ink-2)">'+fmtLong(nextDue(a))+'</div>'+
+        '<div class="c-bal">'+(bal>0?'<span style="color:var(--red);font-weight:700">'+money(bal)+'</span>':'<span style="color:var(--faint)">—</span>')+'</div>'+
         '<div class="c-stat">'+statusHTML(st)+'</div></div>';}).join("")+'</div>';
-  el.querySelectorAll(".row").forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
+  el.querySelectorAll(".row").forEach(function(r){r.onclick=function(){openDetail(r.dataset.id);};});
 }
 var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 var DOWS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -592,11 +633,11 @@ function calHeader(title){
     '<button class="btn sm" onclick="addTimeOff()">+ Time off</button>'+
     '<div class="calnav"><button class="btn sm" onclick="calNav(-1)" title="Previous">&#8249;</button><button class="btn sm" onclick="calToday()">Today</button><button class="btn sm" onclick="calNav(1)" title="Next">&#8250;</button></div></div></div>';}
 function wireCal(){
-  document.querySelectorAll("#scheduleView .evt").forEach(function(b){b.onclick=function(e){e.stopPropagation();openDetail(b.dataset.id);};});
+  document.querySelectorAll("#scheduleView .evt").forEach(function(b){b.onclick=function(e){e.stopPropagation();openJob(b.dataset.id);};});
   document.querySelectorAll("#scheduleView .evmore").forEach(function(b){b.onclick=function(e){e.stopPropagation();openDay(b.dataset.day);};});
   document.querySelectorAll("#scheduleView .cell").forEach(function(c){c.onclick=function(){openDay(c.dataset.day);};});
   document.querySelectorAll("#scheduleView .wh").forEach(function(h){h.onclick=function(){openDay(h.dataset.day);};});
-  document.querySelectorAll("#scheduleView .stop").forEach(function(s){s.onclick=function(){openDetail(s.dataset.id);};});}
+  document.querySelectorAll("#scheduleView .stop").forEach(function(s){s.onclick=function(){openJob(s.dataset.id);};});}
 function renderSchedule(){document.getElementById("pageSub").textContent="Service calendar";if(!calRef)calRef=todayISO();
   if(calView==="week")return renderCalWeek();if(calView==="day")return renderCalDay();return renderCalMonth();}
 function renderCalMonth(){
@@ -927,7 +968,7 @@ function crmExtrasHTML(a){
     '</div></div>';
   var cl=(a.contacts&&a.contacts.length)?'<div class="info">'+a.contacts.map(function(ct){return '<div class="ir"><div class="l">'+(esc(ct.role)||"Contact")+'</div><div class="v">'+esc(ct.name||"")+(ct.phone?' · '+esc(ct.phone):'')+(ct.email?' · '+esc(ct.email):'')+'</div></div>';}).join("")+'</div>':'';
   var cts='<div class="block"><h3>More contacts</h3>'+cl+'<button class="btn sm ghost" style="margin-top:'+(cl?'10px':'0')+'" onclick="addContact(\''+a.id+'\')">+ Add contact</button></div>';
-  return contract+cts;}
+  return contract+invoicesHTML(a)+cts;}
 function activityHTML(a){a.activity=a.activity||[];
   return '<div class="block"><h3>Activity</h3><button class="btn sm" style="margin-bottom:13px" onclick="addActivity(\''+a.id+'\')">+ Log activity</button>'+
    (a.activity.length?'<div class="tl">'+a.activity.map(function(ac){return '<div class="tl-item"><div class="dot" style="background:'+actColor(ac.type)+'"></div><div class="b"><div class="t">'+actLabel(ac.type)+(ac.text?' — '+esc(ac.text):'')+'</div><div class="m">'+fmtLong(ac.date)+'</div></div></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0">No activity logged yet.</div>')+'</div>';}
@@ -987,6 +1028,21 @@ function renderDashboard(){
 function receivablesHTML(){var ov=overdueInvoices();if(!ov.length&&!totalOutstanding())return "";
   return '<div class="sec" style="margin-top:30px"><div class="sec-h"><h2>Receivables</h2><span class="count">'+money(totalOutstanding())+' outstanding</span></div>'+
    (ov.length?'<div class="list">'+ov.map(function(o){var late=daysBetween(o.i.dueDate,todayISO());return '<div class="row" data-id="'+o.a.id+'">'+av(o.a.name)+'<div class="grow"><div class="nm">'+o.a.name+'</div><div class="sub">Invoice #'+o.i.n+' · due '+fmt(o.i.dueDate)+'</div></div><div class="col" style="text-align:right;color:var(--red);font-weight:700">'+money(o.i.amount)+'</div><div style="width:84px;text-align:right;color:var(--red);font-size:12.5px">'+late+'d late</div></div>';}).join("")+'</div>':'<div class="empty">No overdue invoices.</div>')+'</div>';}
+var custFilter="all";
+function setCustFilter(f){custFilter=f;renderAccounts();}
+function invoicesHTML(a){var inv=a.invoices||[];if(!inv.length)return '<div class="block"><h3>Invoices</h3><div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div></div>';
+  return '<div class="block"><h3>Invoices</h3><div class="info">'+inv.map(function(i,k){var od=isInvOverdue(i);return '<div class="ir" style="align-items:center"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' · '+money(i.amount)+'</div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue · due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div><button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Mark unpaid":"Mark paid")+'</button></div>';}).join("")+'</div></div>';}
+function toggleInvoice(id,k){var a=DB.find(function(x){return x.id===id;});if(a.invoices&&a.invoices[k]){a.invoices[k].paid=!a.invoices[k].paid;save();openDetail(id);}}
+function openJob(id){var a=DB.find(function(x){return x.id===id;});if(!a)return;var st=statusOf(a),c=counts(a);
+  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(a.name)+'<div style="min-width:0"><div class="dw-nm">'+a.name+'</div><div class="dw-loc">'+(a.location||"No address")+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
+   '<div class="dw-b"><div style="margin-bottom:6px">'+statusHTML(st)+'</div>'+
+   '<div class="dw-facts"><div><span>Service</span><b>'+FREQ[a.freq]+'</b></div><div><span>Units</span><b>'+c.total+'</b></div><div><span>Est. time</span><b>'+hrs(a.avgMin)+'</b></div><div><span>Next due</span><b style="color:'+st.col+'">'+fmt(nextDue(a))+'</b></div></div>'+
+   '<div class="dw-sec">Crew</div>'+((a.crew&&a.crew.length)?'<div class="chips">'+a.crew.map(function(m){return '<span class="chip2"><span class="ca" style="background:var(--navy)">'+initials(m)+'</span>'+m+'</span>';}).join("")+'</div>':'<div class="dw-warn">⚠ No crew assigned</div>')+
+   '<div class="dw-sec">Reschedule next visit</div><div class="dw-resched"><input type="date" id="dwDate" value="'+nextDue(a)+'"><button class="btn sm" onclick="reschedule(\''+a.id+'\')">Update</button></div>'+
+   '</div><div class="dw-f"><button class="btn" onclick="closeJob()">Close</button><button class="btn primary" onclick="var i=\''+a.id+'\';closeJob();openDetail(i)">Open customer</button></div>';
+  document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
+function closeJob(){document.getElementById("drawer").classList.add("hidden");document.getElementById("drawerScrim").classList.add("hidden");}
+function reschedule(id){var a=DB.find(function(x){return x.id===id;});var d=document.getElementById("dwDate").value;if(!d)return;a.lastVisit=addDays(d,-a.freq);save();toast("Rescheduled to "+fmt(d));closeJob();if(curView==="schedule")renderSchedule();}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
