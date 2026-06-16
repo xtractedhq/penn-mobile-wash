@@ -507,6 +507,8 @@
 .tkrow.done .tktitle{text-decoration:line-through;color:var(--faint)}
 .tkmeta{font-size:12px;color:var(--muted);margin-top:2px}
 .createwrap{position:relative}
+.inqcard .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:760px){.tabbar button{padding:5px 7px;font-size:10px}.tabbar .ic{width:19px;height:19px}}
 </style>
 </head>
 <body>
@@ -515,7 +517,7 @@
     <div class="brand"><div class="mark" style="background:var(--navy)">PMW</div><div><b>Penn Mobile Wash</b><span>Operations Dashboard</span></div></div>
     <nav class="nav" id="nav">
       <button data-view="dashboard" class="on"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>Overview</button>
-      <button data-view="accounts"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Customers</button>
+      <button data-view="accounts"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Customers</button><button data-view="sales"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Sales</button>
       <button data-view="schedule"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4m8-4v4"/></svg>Schedule</button>
       <button data-view="crew"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 010 6M21 20c0-2-1-3.6-3-4.4"/></svg>Team</button><button data-view="money"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Financials</button>
     </nav>
@@ -525,7 +527,7 @@
     <header class="topbar"><div class="row">
       <div><h1 id="pageTitle">Overview</h1><div class="sub" id="pageSub"></div></div>
       <div class="search"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="searchInput" placeholder="Search customers, jobs..." autocomplete="off"></div>
-      <button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button></div></div>
+      <button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openInquiryModal(null);toggleCreate()">Add inquiry</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button></div></div>
       <div class="profile-wrap"><button class="iconbtn" id="profileBtn" onclick="toggleMenu(event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></button>
         <div class="menu hidden" id="profileMenu">
           <button onclick="openSettings();toggleMenu()">Rates &amp; settings</button>
@@ -538,6 +540,7 @@
     <div class="content">
       <section id="dashboardView"></section>
       <section id="accountsView" class="hidden"></section>
+      <section id="salesView" class="hidden"></section>
       <section id="scheduleView" class="hidden"></section>
       <section id="crewView" class="hidden"></section>
       <section id="moneyView" class="hidden"></section>
@@ -549,7 +552,7 @@
 <nav class="tabbar" id="tabbar">
   <button data-view="dashboard" class="on"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>Home</button>
   <button data-view="schedule"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4m8-4v4"/></svg>Schedule</button>
-  <button data-view="accounts"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Customers</button>
+  <button data-view="accounts"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Customers</button><button data-view="sales"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Sales</button>
   <button data-view="crew"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></svg>Team</button>
   <button data-view="money"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Financials</button>
 </nav>
@@ -609,11 +612,11 @@ function crewStack(crew){return '<div class="crewline">'+(crew||[]).slice(0,3).m
 
 let curView="dashboard",curAcct=null,uTab="trailer",searchQ="";
 function setView(v){curView=v;curAcct=null;
-  ["dashboard","accounts","schedule","crew","money","detail"].forEach(function(x){document.getElementById(x+"View").classList.toggle("hidden",x!==v);});
+  ["dashboard","accounts","sales","schedule","crew","money","detail"].forEach(function(x){document.getElementById(x+"View").classList.toggle("hidden",x!==v);});
   document.querySelectorAll("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===v);});
   document.querySelectorAll("#tabbar button[data-view]").forEach(function(b){b.classList.toggle("on",b.dataset.view===v);});
-  var tt={dashboard:"Overview",accounts:"Customers",schedule:"Schedule",crew:"Team",money:"Financials"};document.getElementById("pageTitle").textContent=tt[v]||"";
-  if(v==="dashboard")renderDashboard();if(v==="accounts")renderAccounts();if(v==="schedule")renderSchedule();if(v==="crew")renderCrew();if(v==="money")renderMoney();
+  var tt={dashboard:"Overview",accounts:"Customers",sales:"Sales",schedule:"Schedule",crew:"Team",money:"Financials"};document.getElementById("pageTitle").textContent=tt[v]||"";
+  if(v==="dashboard")renderDashboard();if(v==="accounts")renderAccounts();if(v==="schedule")renderSchedule();if(v==="crew")renderCrew();if(v==="money")renderMoney();if(v==="sales")renderSales();
   window.scrollTo(0,0);}
 
 /* renderDashboard moved to overview module */
@@ -1034,6 +1037,7 @@ function buildAttention(){var att=[];
   DB.forEach(function(a){(a.invoices||[]).forEach(function(i){if(!i.paid&&i.status==="draft")att.push({sev:"blue",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',t:"Draft invoice to review",d:a.name+" \u00b7 "+money(i.amount),id:a.id});});});
   DB.filter(function(a){return a.nextOverride&&a.nextOverride<todayISO();}).forEach(function(a){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>',t:"Missed rescheduled visit",d:a.name+" \u00b7 was due "+fmt(a.nextOverride),id:a.id});});
   TASKS.filter(function(t){return taskOverdue(t);}).forEach(function(t){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>',t:"Overdue task",d:esc(t.title)+(t.related?" \u00b7 "+esc(t.related.label):""),id:(t.related&&t.related.id)||""});});
+  INQUIRIES.filter(function(i){return needsFollowup(i);}).forEach(function(i){att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 8 9 6 9-6"/></svg>',t:"Inquiry needs follow-up",d:esc(i.company)+(i.nextFollowup?" \u00b7 follow-up overdue":" \u00b7 no follow-up set"),id:i.id,kind:"inquiry"});});
   return att;}
 function renderDashboard(){
   var h=new Date().getHours(),g=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
@@ -1055,12 +1059,12 @@ function renderDashboard(){
     kpi("Team available",avail+" / "+CREW.length,(offset?offset+" off today":"all available"))+
     '</div>';
   html+='<div class="sec"><div class="sec-h"><h2>Needs attention</h2><span class="count">'+att.length+'</span></div>'+
-    (att.length?'<div class="attn">'+att.slice(0,8).map(function(x){return '<div class="attn-row" data-id="'+x.id+'"><div class="attn-ic" style="'+sevStyle(x.sev)+'">'+x.ic+'</div><div style="min-width:0"><div class="t">'+x.t+'</div><div class="d">'+x.d+'</div></div><div class="go">View →</div></div>';}).join("")+'</div>'
+    (att.length?'<div class="attn">'+att.slice(0,8).map(function(x){return '<div class="attn-row" data-id="'+x.id+'" data-kind="'+(x.kind||"")+'"><div class="attn-ic" style="'+sevStyle(x.sev)+'">'+x.ic+'</div><div style="min-width:0"><div class="t">'+x.t+'</div><div class="d">'+x.d+'</div></div><div class="go">View →</div></div>';}).join("")+'</div>'
       :'<div class="attn"><div class="empty" style="padding:24px">Nothing needs attention — you\'re all caught up.</div></div>')+'</div>';
   html+='<div class="sec"><div class="sec-h"><h2>Today\'s schedule</h2><span class="count">'+dueToday.length+'</span><div class="grow"></div><button class="link" onclick="setView(\'schedule\')">Open calendar</button></div>'+
     '<div class="list">'+(todayJobs.length?todayJobs.map(function(a){var c=counts(a);return '<div class="row" data-id="'+a.id+'">'+av(a.name)+'<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+(a.location||"")+' · '+c.total+' units</div></div>'+crewStack(a.crew)+'<div style="width:118px;text-align:right">'+statusHTML(jobStatusOf(a))+'</div></div>';}).join(""):'<div class="empty">No jobs due today — next ones are on the calendar.</div>')+'</div></div>';
   html+=todayTasksHTML();document.getElementById("dashboardView").innerHTML=html;
-  document.querySelectorAll("#dashboardView .attn-row, #dashboardView .row").forEach(function(r){r.onclick=function(){openDetail(r.dataset.id);};});
+  document.querySelectorAll("#dashboardView .attn-row, #dashboardView .row").forEach(function(r){r.onclick=function(){if(r.dataset.kind==="inquiry")openInquiry(r.dataset.id);else if(r.dataset.id)openDetail(r.dataset.id);};});
 }
 function receivablesHTML(){var ov=overdueInvoices();if(!ov.length&&!totalOutstanding())return "";
   return '<div class="sec" style="margin-top:30px"><div class="sec-h"><h2>Receivables</h2><span class="count">'+money(totalOutstanding())+' outstanding</span></div>'+
@@ -1256,6 +1260,78 @@ function updateTaskBadge(){var b=document.getElementById("taskBadge");if(!b)retu
 function afterTaskChange(){updateTaskBadge();if(curView==="dashboard")renderDashboard();var dw=document.getElementById("drawer");if(dw&&!dw.classList.contains("hidden")&&/>Tasks</.test(dw.innerHTML))renderTasksDrawer();if(curView==="detail"&&curAcct)openDetail(curAcct);}
 function toggleCreate(e){if(e&&e.stopPropagation)e.stopPropagation();var m=document.getElementById("createMenu");if(m)m.classList.toggle("hidden");}
 document.addEventListener("click",function(e){var m=document.getElementById("createMenu");if(m&&!m.classList.contains("hidden")&&!(e.target.closest&&e.target.closest("#createWrap")))m.classList.add("hidden");});
+var STAGE2={"new":{l:"New",c:"var(--blue)"},"contacted":{l:"Contacted",c:"var(--accent)"},"qualified":{l:"Qualified",c:"#7c4dbd"},"quote-needed":{l:"Quote needed",c:"var(--amber)"},"quote-sent":{l:"Quote sent",c:"#0d8a7e"},"follow-up":{l:"Follow-up",c:"var(--amber)"},"won":{l:"Won",c:"var(--green)"},"lost":{l:"Lost",c:"var(--muted)"}};
+var SOURCES=["phone","email","website","referral","existing customer","manual"];
+var STAGE_ORDER=["new","contacted","qualified","quote-needed","quote-sent","follow-up"];
+function loadInquiries(){try{var r=localStorage.getItem("pennwash.inquiries");if(r)return JSON.parse(r);}catch(e){}var T=todayISO();
+  var seed=[
+   {id:uid(),company:"Northeast Transport",contact:"David Miller",phone:"570-555-0420",email:"dmiller@netrans.com",source:"email",location:"Wilkes-Barre, PA",fleetSize:32,service:"Fleet wash",frequency:"Weekly",estValue:2400,stage:"quote-sent",received:addDays(T,-5),lastContacted:addDays(T,-5),nextAction:"Follow up on quote",nextFollowup:T,notes:"Uses an inconsistent local provider. Wants Tue/Thu service. Needs pricing by Friday.",lostReason:"",created:addDays(T,-5)},
+   {id:uid(),company:"Keystone Foods",contact:"Amy Cole",phone:"",email:"acole@keystonefoods.com",source:"website",location:"Hazleton, PA",fleetSize:18,service:"Trailer wash",frequency:"Bi-weekly",estValue:1100,stage:"new",received:addDays(T,-1),lastContacted:"",nextAction:"",nextFollowup:"",notes:"Submitted website contact form.",lostReason:"",created:addDays(T,-1)},
+   {id:uid(),company:"Valley Produce",contact:"Rob King",phone:"570-555-0488",email:"rking@valleyproduce.com",source:"referral",location:"Scranton, PA",fleetSize:24,service:"Fleet wash",frequency:"Weekly",estValue:1800,stage:"contacted",received:addDays(T,-9),lastContacted:addDays(T,-7),nextAction:"Send pricing",nextFollowup:addDays(T,-2),notes:"Referred by Steelcase.",lostReason:"",created:addDays(T,-9)},
+   {id:uid(),company:"Cargo Plus",contact:"Lena Wu",phone:"570-555-0512",email:"lwu@cargoplus.com",source:"phone",location:"Allentown, PA",fleetSize:40,service:"Fleet wash",frequency:"M/W/F",estValue:3200,stage:"qualified",received:addDays(T,-3),lastContacted:addDays(T,-2),nextAction:"Prepare quote",nextFollowup:addDays(T,1),notes:"Large fleet, wants multiple washes per week.",lostReason:"",created:addDays(T,-3)}
+  ];try{localStorage.setItem("pennwash.inquiries",JSON.stringify(seed));}catch(e){}return seed;}
+var INQUIRIES=loadInquiries();var salesFilter="open";
+function saveInquiries(){try{localStorage.setItem("pennwash.inquiries",JSON.stringify(INQUIRIES));}catch(e){}}
+function inquiryAge(i){return Math.max(0,daysBetween(i.received||todayISO(),todayISO()));}
+function needsFollowup(i){return i.stage!=="won"&&i.stage!=="lost"&&(!i.nextFollowup||i.nextFollowup<todayISO());}
+function stageBadge2(st){var x=STAGE2[st]||STAGE2["new"];return '<span class="prio" style="color:'+x.c+';background:var(--soft-2)">'+x.l+'</span>';}
+function setSalesFilter(f){salesFilter=f;renderSales();}
+function inqCard(i){var fu=needsFollowup(i),age=inquiryAge(i);
+  return '<button class="acct inqcard" data-id="'+i.id+'"><div class="top">'+av(i.company)+'<div style="min-width:0;flex:1"><div class="nm">'+esc(i.company)+'</div><div class="loc">'+(i.fleetSize?i.fleetSize+" trucks · ":"")+esc(i.service||"")+'</div></div>'+stageBadge2(i.stage)+'</div>'+
+    '<div class="mid"><span class="chip">'+(i.estValue?money(i.estValue)+"/mo":"Value TBD")+'</span>'+(i.frequency?'<span class="chip">'+esc(i.frequency)+'</span>':"")+'<span class="chip">'+age+'d old</span></div>'+
+    '<div class="foot"><div class="due">'+(i.nextFollowup?'Follow-up <b style="color:'+(fu?"var(--red)":"var(--ink)")+'">'+fmt(i.nextFollowup)+'</b>':'<span style="color:var(--amber)">No follow-up set</span>')+'</div>'+(i.nextAction?'<span class="status s-soon" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(i.nextAction)+'</span>':"")+'</div></button>';}
+function renderSales(){document.getElementById("pageSub").textContent="Inquiries & opportunity pipeline";
+  var open=INQUIRIES.filter(function(i){return i.stage!=="won"&&i.stage!=="lost";});
+  var pipe=open.reduce(function(t,i){return t+(i.estValue||0);},0),needFu=open.filter(needsFollowup).length,won=INQUIRIES.filter(function(i){return i.stage==="won";}).length;
+  var stat=function(n,l,c){return '<div class="stat"><div class="n"'+(c?' style="color:'+c+'"':'')+'>'+n+'</div><div class="l">'+l+'</div></div>';};
+  var html='<div class="strip">'+stat(open.length,"Open inquiries")+stat(money(pipe),"Pipeline value")+stat(needFu,"Need follow-up",needFu?"var(--amber)":null)+stat(won,"Won")+'</div>';
+  html+='<div class="filters">'+[["open","Pipeline"],["won","Won"],["lost","Lost"],["all","All"]].map(function(fp){return '<button class="fchip'+(salesFilter===fp[0]?" on":"")+'" onclick="setSalesFilter(\''+fp[0]+'\')">'+fp[1]+'</button>';}).join("")+'<div class="grow"></div><button class="btn sm primary" onclick="openInquiryModal(null)">+ New inquiry</button></div>';
+  if(salesFilter==="open"){
+    html+=STAGE_ORDER.map(function(st){var items=open.filter(function(i){return i.stage===st;});if(!items.length)return"";return '<div class="sec"><div class="sec-h"><h2>'+STAGE2[st].l+'</h2><span class="count">'+items.length+'</span></div><div class="grid">'+items.map(inqCard).join("")+'</div></div>';}).join("")||'<div class="empty">No open inquiries. Add one with "+ New inquiry".</div>';
+  }else{
+    var list=INQUIRIES.filter(function(i){if(salesFilter==="won")return i.stage==="won";if(salesFilter==="lost")return i.stage==="lost";return true;});
+    html+='<div class="grid">'+(list.length?list.map(inqCard).join(""):'<div class="empty">Nothing here.</div>')+'</div>';
+  }
+  document.getElementById("salesView").innerHTML=html;
+  document.querySelectorAll("#salesView .inqcard").forEach(function(c){c.onclick=function(){openInquiry(c.dataset.id);};});}
+function openInquiry(id){var i=INQUIRIES.find(function(x){return x.id===id;});if(!i)return;var tasks=TASKS.filter(function(t){return t.related&&t.related.id===id;});
+  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(i.company)+'<div style="min-width:0"><div class="dw-nm">'+esc(i.company)+'</div><div class="dw-loc">'+stageBadge2(i.stage)+' · '+inquiryAge(i)+'d old · '+esc(i.source||"")+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
+   '<div class="dw-b">'+
+   '<div class="dw-facts"><div><span>Contact</span><b>'+(esc(i.contact)||"—")+'</b></div><div><span>Fleet</span><b>'+(i.fleetSize||"—")+' trucks</b></div><div><span>Service</span><b>'+(esc(i.service)||"—")+(i.frequency?" · "+esc(i.frequency):"")+'</b></div><div><span>Est. value</span><b>'+(i.estValue?money(i.estValue)+"/mo":"TBD")+'</b></div></div>'+
+   '<div class="dw-sec">What happens next?</div>'+((i.nextAction||i.nextFollowup)?'<div class="minfo"><b>'+(esc(i.nextAction)||"Follow up")+'</b>'+(i.nextFollowup?' · by '+fmt(i.nextFollowup):"")+'</div>':'<div class="dw-warn">⚠ No next action — this lead could go cold</div>')+
+   '<div class="dw-sec">Move stage</div><div class="pick">'+["new","contacted","qualified","quote-needed","quote-sent","follow-up","won","lost"].map(function(st){return '<button type="button" class="'+(i.stage===st?"on":"")+'" onclick="setInquiryStage(\''+id+'\',\''+st+'\')">'+STAGE2[st].l+'</button>';}).join("")+'</div>'+
+   (i.notes?'<div class="dw-sec">Notes</div><div class="minfo">'+esc(i.notes)+'</div>':"")+
+   '<div class="dw-sec">Tasks</div><div class="tk-quick"><input id="iqtkQuick" placeholder="Add a task…" onkeydown="if(event.key===\'Enter\')addInquiryTask(\''+id+'\')"><button class="btn sm" onclick="addInquiryTask(\''+id+'\')">Add</button></div>'+(tasks.length?'<div class="tklist" style="margin-top:8px">'+tasks.map(taskRow).join("")+'</div>':"")+
+   '</div><div class="dw-f"><button class="btn" onclick="editInquiry(\''+id+'\')">Edit</button>'+(i.customerId?'<button class="btn primary" onclick="closeJob();openDetail(\''+i.customerId+'\')">Open customer</button>':'<button class="btn primary" onclick="convertInquiry(\''+id+'\')">Convert to customer</button>')+'</div>';
+  document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
+function setInquiryStage(id,st){var i=INQUIRIES.find(function(x){return x.id===id;});i.stage=st;i.lastContacted=todayISO();saveInquiries();openInquiry(id);if(curView==="sales")renderSales();if(curView==="dashboard")renderDashboard();toast("Moved to "+STAGE2[st].l);}
+function addInquiryTask(id){var inp=document.getElementById("iqtkQuick");if(!inp)return;var v=inp.value.trim();if(!v)return;var p=parseQuickTask(v);var i=INQUIRIES.find(function(x){return x.id===id;});TASKS.unshift({id:uid(),title:p.title,related:{type:"inquiry",id:id,label:i.company},due:p.due,dueTime:p.dueTime,priority:"med",status:"todo",notes:"",source:"quick",created:todayISO()});saveTasks();updateTaskBadge();openInquiry(id);toast("Task added");}
+function convertInquiry(id){var i=INQUIRIES.find(function(x){return x.id===id;});if(i.customerId){toast("Already converted");return;}
+  var fm={weekly:7,"bi-weekly":14,biweekly:14,monthly:30},fq=fm[(i.frequency||"").toLowerCase()]||7;
+  var na=acct({name:i.company,location:i.location||"",contact:i.contact||"",phone:i.phone||"",email:i.email||"",freq:fq,avgMin:180,lastVisit:todayISO(),trucks:+i.fleetSize||0,tkPrefix:"T-",crew:[],billRate:0,stage:"active"});
+  DB.push(na);save();i.stage="won";i.customerId=na.id;i.lastContacted=todayISO();saveInquiries();closeJob();openDetail(na.id);toast(i.company+" converted to a customer");}
+function editInquiry(id){openInquiryModal(id);}
+function openInquiryModal(id){var i=id?INQUIRIES.find(function(x){return x.id===id;}):null,isNew=!i;
+  var srcOpts=SOURCES.map(function(sc){return '<option value="'+sc+'"'+(i&&i.source===sc?" selected":"")+'>'+sc.charAt(0).toUpperCase()+sc.slice(1)+'</option>';}).join("");
+  var stOpts=Object.keys(STAGE2).map(function(st){return '<option value="'+st+'"'+((i?i.stage:"new")===st?" selected":"")+'>'+STAGE2[st].l+'</option>';}).join("");
+  openScrim('<div class="modal"><div class="mh"><h3>'+(isNew?"New inquiry":"Edit inquiry")+'</h3></div><div class="mb">'+
+    '<label class="fld">Company<input id="iq_co" value="'+(i?esc(i.company):"")+'" placeholder="e.g. Northeast Transport"></label>'+
+    '<div class="two"><label class="fld">Contact<input id="iq_contact" value="'+(i?esc(i.contact||""):"")+'"></label><label class="fld">Phone<input id="iq_phone" value="'+(i?esc(i.phone||""):"")+'"></label></div>'+
+    '<label class="fld">Email<input id="iq_email" value="'+(i?esc(i.email||""):"")+'"></label>'+
+    '<div class="two"><label class="fld">Source<select id="iq_src">'+srcOpts+'</select></label><label class="fld">Location<input id="iq_loc" value="'+(i?esc(i.location||""):"")+'"></label></div>'+
+    '<div class="two"><label class="fld">Fleet size<input id="iq_fleet" type="number" min="0" value="'+(i?(i.fleetSize||0):0)+'"></label><label class="fld">Est. value ($/mo)<input id="iq_val" type="number" min="0" value="'+(i?(i.estValue||0):0)+'"></label></div>'+
+    '<div class="two"><label class="fld">Requested service<input id="iq_service" value="'+(i?esc(i.service||""):"")+'" placeholder="Fleet wash"></label><label class="fld">Frequency<input id="iq_freq" value="'+(i?esc(i.frequency||""):"")+'" placeholder="Weekly, Tue/Thu..."></label></div>'+
+    '<div class="two"><label class="fld">Stage<select id="iq_stage">'+stOpts+'</select></label><label class="fld">Date received<input id="iq_recv" type="date" value="'+(i&&i.received?i.received:todayISO())+'"></label></div>'+
+    '<div class="two"><label class="fld">Next action<input id="iq_na" value="'+(i?esc(i.nextAction||""):"")+'"></label><label class="fld">Next follow-up<input id="iq_fu" type="date" value="'+(i&&i.nextFollowup?i.nextFollowup:"")+'"></label></div>'+
+    '<label class="fld">Notes<input id="iq_notes" value="'+(i?esc(i.notes||""):"")+'"></label>'+
+    '<label class="fld">Lost reason (if lost)<input id="iq_lost" value="'+(i?esc(i.lostReason||""):"")+'"></label>'+
+    (isNew?"":'<button class="btn danger sm" onclick="deleteInquiry(\''+i.id+'\')">Delete inquiry</button>')+
+    '</div><div class="mf"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn primary" id="iqSave">'+(isNew?"Add inquiry":"Save")+'</button></div></div>');
+  document.getElementById("iqSave").onclick=function(){var co=document.getElementById("iq_co").value.trim();if(!co){toast("Company required");return;}
+    var obj={company:co,contact:document.getElementById("iq_contact").value.trim(),phone:document.getElementById("iq_phone").value.trim(),email:document.getElementById("iq_email").value.trim(),source:document.getElementById("iq_src").value,location:document.getElementById("iq_loc").value.trim(),fleetSize:+document.getElementById("iq_fleet").value||0,estValue:+document.getElementById("iq_val").value||0,service:document.getElementById("iq_service").value.trim(),frequency:document.getElementById("iq_freq").value.trim(),stage:document.getElementById("iq_stage").value,received:document.getElementById("iq_recv").value||todayISO(),nextAction:document.getElementById("iq_na").value.trim(),nextFollowup:document.getElementById("iq_fu").value||"",notes:document.getElementById("iq_notes").value.trim(),lostReason:document.getElementById("iq_lost").value.trim()};
+    if(isNew){INQUIRIES.unshift(Object.assign({id:uid(),lastContacted:"",created:todayISO()},obj));}else{Object.assign(i,obj);}
+    saveInquiries();closeScrim();if(curView==="sales")renderSales();else setView("sales");if(curView==="dashboard")renderDashboard();toast(isNew?"Inquiry added":"Inquiry saved");};}
+function deleteInquiry(id){INQUIRIES=INQUIRIES.filter(function(x){return x.id!==id;});saveInquiries();closeScrim();closeJob();if(curView==="sales")renderSales();toast("Inquiry deleted");}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
