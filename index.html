@@ -491,6 +491,22 @@
 .upitem:last-child{border-bottom:none}
 .upitem b{font-variant-numeric:tabular-nums;color:var(--muted);margin-right:6px}
 @media (max-width:560px){.wkload{width:96px;flex-basis:96px}}
+.hdrbadge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.tk-ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.tk-quick{display:flex;gap:8px}
+.tk-quick input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13.5px}
+.tkfilters{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}
+.tklist{display:flex;flex-direction:column}
+.tkrow{display:flex;align-items:flex-start;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line-2)}
+.tkrow:last-child{border-bottom:none}
+.tkcheck{width:19px;height:19px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;margin-top:1px;cursor:pointer;background:#fff}
+.tkcheck:hover{border-color:var(--accent)}
+.tkcheck.on{background:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center}
+.tkbody{flex:1;min-width:0;cursor:pointer}
+.tktitle{font-size:14px;font-weight:560}
+.tkrow.done .tktitle{text-decoration:line-through;color:var(--faint)}
+.tkmeta{font-size:12px;color:var(--muted);margin-top:2px}
+.createwrap{position:relative}
 </style>
 </head>
 <body>
@@ -509,7 +525,7 @@
     <header class="topbar"><div class="row">
       <div><h1 id="pageTitle">Overview</h1><div class="sub" id="pageSub"></div></div>
       <div class="search"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="searchInput" placeholder="Search customers, jobs..." autocomplete="off"></div>
-      <button class="btn primary" id="addBtn"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button>
+      <button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button></div></div>
       <div class="profile-wrap"><button class="iconbtn" id="profileBtn" onclick="toggleMenu(event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></button>
         <div class="menu hidden" id="profileMenu">
           <button onclick="openSettings();toggleMenu()">Rates &amp; settings</button>
@@ -985,7 +1001,7 @@ function crmExtrasHTML(a){
     '</div></div>';
   var cl=(a.contacts&&a.contacts.length)?'<div class="info">'+a.contacts.map(function(ct){return '<div class="ir"><div class="l">'+(esc(ct.role)||"Contact")+'</div><div class="v">'+esc(ct.name||"")+(ct.phone?' · '+esc(ct.phone):'')+(ct.email?' · '+esc(ct.email):'')+'</div></div>';}).join("")+'</div>':'';
   var cts='<div class="block"><h3>More contacts</h3>'+cl+'<button class="btn sm ghost" style="margin-top:'+(cl?'10px':'0')+'" onclick="addContact(\''+a.id+'\')">+ Add contact</button></div>';
-  return contract+invoicesHTML(a)+cts;}
+  return contract+invoicesHTML(a)+customerTasksHTML(a)+cts;}
 function activityHTML(a){a.activity=a.activity||[];
   return '<div class="block"><h3>Activity</h3><button class="btn sm" style="margin-bottom:13px" onclick="addActivity(\''+a.id+'\')">+ Log activity</button>'+
    (a.activity.length?'<div class="tl">'+a.activity.map(function(ac){return '<div class="tl-item"><div class="dot" style="background:'+actColor(ac.type)+'"></div><div class="b"><div class="t">'+actLabel(ac.type)+(ac.text?' — '+esc(ac.text):'')+'</div><div class="m">'+fmtLong(ac.date)+'</div></div></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0">No activity logged yet.</div>')+'</div>';}
@@ -1017,6 +1033,7 @@ function buildAttention(){var att=[];
   DB.filter(function(a){return unbilledRecords(a).length>0;}).forEach(function(a){var n=unbilledRecords(a).length;att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h6"/></svg>',t:"Completed services unbilled",d:a.name+" \u00b7 "+n+" service"+(n>1?"s":"")+" \u00b7 "+money(unbilledTotal(a)),id:a.id});});
   DB.forEach(function(a){(a.invoices||[]).forEach(function(i){if(!i.paid&&i.status==="draft")att.push({sev:"blue",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',t:"Draft invoice to review",d:a.name+" \u00b7 "+money(i.amount),id:a.id});});});
   DB.filter(function(a){return a.nextOverride&&a.nextOverride<todayISO();}).forEach(function(a){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>',t:"Missed rescheduled visit",d:a.name+" \u00b7 was due "+fmt(a.nextOverride),id:a.id});});
+  TASKS.filter(function(t){return taskOverdue(t);}).forEach(function(t){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>',t:"Overdue task",d:esc(t.title)+(t.related?" \u00b7 "+esc(t.related.label):""),id:(t.related&&t.related.id)||""});});
   return att;}
 function renderDashboard(){
   var h=new Date().getHours(),g=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
@@ -1042,7 +1059,7 @@ function renderDashboard(){
       :'<div class="attn"><div class="empty" style="padding:24px">Nothing needs attention — you\'re all caught up.</div></div>')+'</div>';
   html+='<div class="sec"><div class="sec-h"><h2>Today\'s schedule</h2><span class="count">'+dueToday.length+'</span><div class="grow"></div><button class="link" onclick="setView(\'schedule\')">Open calendar</button></div>'+
     '<div class="list">'+(todayJobs.length?todayJobs.map(function(a){var c=counts(a);return '<div class="row" data-id="'+a.id+'">'+av(a.name)+'<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+(a.location||"")+' · '+c.total+' units</div></div>'+crewStack(a.crew)+'<div style="width:118px;text-align:right">'+statusHTML(jobStatusOf(a))+'</div></div>';}).join(""):'<div class="empty">No jobs due today — next ones are on the calendar.</div>')+'</div></div>';
-  document.getElementById("dashboardView").innerHTML=html;
+  html+=todayTasksHTML();document.getElementById("dashboardView").innerHTML=html;
   document.querySelectorAll("#dashboardView .attn-row, #dashboardView .row").forEach(function(r){r.onclick=function(){openDetail(r.dataset.id);};});
 }
 function receivablesHTML(){var ov=overdueInvoices();if(!ov.length&&!totalOutstanding())return "";
@@ -1169,13 +1186,83 @@ function editMember(m){var t=TEAM[m]||{};var picked=(t.days||[]).slice();
    '</div><div class="mf"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn primary" id="emSave">Save</button></div></div>');
   document.querySelectorAll("#emDays button").forEach(function(b){b.onclick=function(){var dd=+b.dataset.d;if(picked.indexOf(dd)>-1)picked=picked.filter(function(x){return x!==dd;});else picked.push(dd);b.classList.toggle("on");};});
   document.getElementById("emSave").onclick=function(){TEAM[m]=Object.assign(TEAM[m]||{},{target:+document.getElementById("em_t").value||0,role:document.getElementById("em_role").value.trim(),phone:document.getElementById("em_phone").value.trim(),days:picked.slice(),status:document.getElementById("em_status").value,notes:document.getElementById("em_notes").value.trim()});saveTeam();closeScrim();openMember(m);if(curView==="crew")renderCrew();toast(m+" updated");};}
+function loadTasks(){try{var r=localStorage.getItem("pennwash.tasks");if(r)return JSON.parse(r);}catch(e){}var T=todayISO();
+  function rf(n){var a=DB.find(function(x){return x.name===n;});return a?{type:"customer",id:a.id,label:a.name}:null;}
+  var seed=[{id:uid(),title:"Call Steelcase about extra trailers",related:rf("Steelcase"),due:T,dueTime:"10:00",priority:"high",status:"todo",notes:"",source:"manual",created:T},
+   {id:uid(),title:"Follow up on Wise quote",related:rf("Wise"),due:addDays(T,-2),dueTime:"",priority:"med",status:"todo",notes:"",source:"manual",created:addDays(T,-4)},
+   {id:uid(),title:"Send certificate of insurance",related:rf("Chicken Coop"),due:addDays(T,2),dueTime:"",priority:"med",status:"todo",notes:"",source:"manual",created:T},
+   {id:uid(),title:"Confirm Tuesday service",related:rf("Henky Fleet"),due:T,dueTime:"14:00",priority:"low",status:"todo",notes:"",source:"manual",created:T},
+   {id:uid(),title:"Check June invoice payment",related:rf("Wise"),due:addDays(T,-1),dueTime:"",priority:"high",status:"waiting",notes:"Waiting on accounting",source:"manual",created:addDays(T,-6)}];
+  try{localStorage.setItem("pennwash.tasks",JSON.stringify(seed));}catch(e){}return seed;}
+var TASKS=loadTasks();var taskFilter="open";
+function saveTasks(){try{localStorage.setItem("pennwash.tasks",JSON.stringify(TASKS));}catch(e){}}
+function taskActive(t){return t.status!=="done"&&t.status!=="cancelled";}
+function taskOverdue(t){return taskActive(t)&&t.due&&t.due<todayISO();}
+function taskDueToday(t){return taskActive(t)&&t.due===todayISO();}
+function taskCounts(){var o=0,dt=0,w=0;TASKS.forEach(function(t){if(taskOverdue(t))o++;else if(taskDueToday(t))dt++;if(t.status==="waiting")w++;});return {overdue:o,dueToday:dt,waiting:w,badge:o+dt};}
+function fmtTime(t){if(!t)return"";var p=t.split(":");var h=+p[0],m=p[1];var ap=h>=12?"PM":"AM";h=h%12||12;return h+":"+m+" "+ap;}
+function parseQuickTask(str){var s=str.trim(),low=s.toLowerCase(),T=todayISO(),due=null,time=null;
+  var days={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+  var tm=low.match(/\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if(tm){var h=+tm[1],mn=tm[2]||"00";if(tm[3]==="pm"&&h<12)h+=12;if(tm[3]==="am"&&h===12)h=0;time=String(h).padStart(2,"0")+":"+mn;s=s.replace(new RegExp(tm[0],"i"),"").trim();low=s.toLowerCase();}
+  if(/\btomorrow\b/.test(low)){due=addDays(T,1);s=s.replace(/\btomorrow\b/i,"").trim();}
+  else if(/\btoday\b/.test(low)){due=T;s=s.replace(/\btoday\b/i,"").trim();}
+  else{var nd=low.match(/\bin\s+(\d+)\s+days?\b/);if(nd){due=addDays(T,+nd[1]);s=s.replace(new RegExp(nd[0],"i"),"").trim();}
+   else{var wd=low.match(/\b(on|by|next)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/)||low.match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\s*$/);
+    if(wd){var dw2=(wd[2]||wd[1]),target=days[dw2],cur=new Date(T+"T00:00:00").getDay(),add=(target-cur+7)%7;if(add===0)add=7;due=addDays(T,add);s=s.replace(new RegExp(wd[0],"i"),"").trim();}}}
+  s=s.replace(/\b(on|by|next|with)\b\s*$/i,"").replace(/\s{2,}/g," ").trim();
+  return {title:s||str.trim(),due:due,dueTime:time};}
+function taskRow(t){var od=taskOverdue(t),done=t.status==="done";
+  return '<div class="tkrow'+(done?" done":"")+'"><button class="tkcheck'+(done?" on":"")+'" onclick="toggleTaskDone(\''+t.id+'\')"></button><div class="tkbody" onclick="openTaskEdit(\''+t.id+'\')"><div class="tktitle">'+esc(t.title)+'</div><div class="tkmeta">'+(t.related?esc(t.related.label)+" · ":"")+(t.due?'<span style="color:'+(od?"var(--red)":"var(--muted)")+'">'+(od?"Overdue · ":"")+fmt(t.due)+(t.dueTime?" "+fmtTime(t.dueTime):"")+'</span>':"No date")+(t.status==="waiting"?' · <span style="color:var(--amber)">Waiting</span>':"")+(t.status==="inprogress"?' · In progress':"")+'</div></div></div>';}
+function openTasks(){renderTasksDrawer();document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
+function setTaskFilter(f){taskFilter=f;renderTasksDrawer();}
+function renderTasksDrawer(){var c=taskCounts();
+  var filters=[["open","Open"],["today","Today"],["upcoming","Upcoming"],["overdue","Overdue"],["waiting","Waiting"],["done","Done"]];
+  var list=TASKS.filter(function(t){if(taskFilter==="open")return taskActive(t);if(taskFilter==="today")return taskDueToday(t);if(taskFilter==="upcoming")return taskActive(t)&&t.due&&t.due>todayISO();if(taskFilter==="overdue")return taskOverdue(t);if(taskFilter==="waiting")return t.status==="waiting";if(taskFilter==="done")return t.status==="done";return true;}).sort(function(a,b){return (a.due||"9")<(b.due||"9")?-1:1;});
+  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t"><div class="tk-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg></div><div><div class="dw-nm">Tasks</div><div class="dw-loc">'+c.overdue+' overdue · '+c.dueToday+' today</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
+   '<div class="dw-b"><div class="tk-quick"><input id="tkQuick" placeholder="Add a task… e.g. Call Mike tomorrow at 10" onkeydown="if(event.key===\'Enter\')quickAddTask()"><button class="btn sm primary" onclick="quickAddTask()">Add</button></div>'+
+   '<div class="tkfilters">'+filters.map(function(fp){return '<button class="fchip'+(taskFilter===fp[0]?" on":"")+'" onclick="setTaskFilter(\''+fp[0]+'\')">'+fp[1]+'</button>';}).join("")+'</div>'+
+   '<div class="tklist">'+(list.length?list.map(taskRow).join(""):'<div class="empty">Nothing here — you\'re caught up.</div>')+'</div></div>';}
+function quickAddTask(){var inp=document.getElementById("tkQuick");if(!inp)return;var v=inp.value.trim();if(!v)return;var p=parseQuickTask(v);TASKS.unshift({id:uid(),title:p.title,related:null,due:p.due,dueTime:p.dueTime,priority:"med",status:"todo",notes:"",source:"quick",created:todayISO()});saveTasks();renderTasksDrawer();afterTaskChange();}
+function quickAddTaskFor(id){var inp=document.getElementById("ctkQuick");if(!inp)return;var v=inp.value.trim();if(!v)return;var p=parseQuickTask(v);var a=DB.find(function(x){return x.id===id;});TASKS.unshift({id:uid(),title:p.title,related:{type:"customer",id:id,label:a.name},due:p.due,dueTime:p.dueTime,priority:"med",status:"todo",notes:"",source:"quick",created:todayISO()});saveTasks();openDetail(id);toast("Task added");}
+function toggleTaskDone(id){var t=TASKS.find(function(x){return x.id===id;});if(!t)return;t.status=(t.status==="done")?"todo":"done";saveTasks();afterTaskChange();}
+function deleteTask(id){TASKS=TASKS.filter(function(t){return t.id!==id;});saveTasks();closeScrim();afterTaskChange();toast("Task deleted");}
+function openTaskEdit(id){openTaskModal(id);}
+function openTaskModal(id){var t=id?TASKS.find(function(x){return x.id===id;}):null,isNew=!t;
+  var custOpts='<option value="">— none —</option>'+DB.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(a){return '<option value="'+a.id+'"'+(t&&t.related&&t.related.id===a.id?" selected":"")+'>'+esc(a.name)+'</option>';}).join("");
+  var stOpts=[["todo","To do"],["inprogress","In progress"],["waiting","Waiting on customer"],["done","Completed"],["cancelled","Cancelled"]].map(function(o){return '<option value="'+o[0]+'"'+(t&&t.status===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("");
+  var prOpts=[["high","High"],["med","Medium"],["low","Low"]].map(function(o){return '<option value="'+o[0]+'"'+((t?t.priority:"med")===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("");
+  openScrim('<div class="modal"><div class="mh"><h3>'+(isNew?"New task":"Edit task")+'</h3></div><div class="mb">'+
+    '<label class="fld">Task<input id="tk_title" value="'+(t?esc(t.title):"")+'" placeholder="e.g. Follow up on quote"></label>'+
+    '<label class="fld">Related customer<select id="tk_rel">'+custOpts+'</select></label>'+
+    '<div class="two"><label class="fld">Due date<input id="tk_due" type="date" value="'+(t&&t.due?t.due:"")+'"></label><label class="fld">Due time<input id="tk_time" type="time" value="'+(t&&t.dueTime?t.dueTime:"")+'"></label></div>'+
+    '<div class="two"><label class="fld">Priority<select id="tk_pri">'+prOpts+'</select></label><label class="fld">Status<select id="tk_st">'+stOpts+'</select></label></div>'+
+    '<label class="fld">Notes<input id="tk_notes" value="'+(t?esc(t.notes||""):"")+'"></label>'+
+    (isNew?"":'<button class="btn danger sm" onclick="deleteTask(\''+t.id+'\')">Delete task</button>')+
+    '</div><div class="mf"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn primary" id="tkSave">'+(isNew?"Add task":"Save")+'</button></div></div>');
+  document.getElementById("tkSave").onclick=function(){var title=document.getElementById("tk_title").value.trim();if(!title){toast("Title required");return;}
+    var rid=document.getElementById("tk_rel").value,rel=rid?{type:"customer",id:rid,label:(DB.find(function(x){return x.id===rid;})||{}).name}:null;
+    var obj={title:title,related:rel,due:document.getElementById("tk_due").value||null,dueTime:document.getElementById("tk_time").value||null,priority:document.getElementById("tk_pri").value,status:document.getElementById("tk_st").value,notes:document.getElementById("tk_notes").value.trim()};
+    if(isNew){TASKS.unshift(Object.assign({id:uid(),source:"manual",created:todayISO()},obj));}else{Object.assign(t,obj);}
+    saveTasks();closeScrim();afterTaskChange();toast(isNew?"Task added":"Task saved");};}
+function customerTasksHTML(a){var ts=TASKS.filter(function(t){return t.related&&t.related.id===a.id;}).sort(function(x,y){return (x.due||"9")<(y.due||"9")?-1:1;});
+  return '<div class="block"><h3>Tasks</h3><div class="tk-quick"><input id="ctkQuick" placeholder="Add a task for this customer…" onkeydown="if(event.key===\'Enter\')quickAddTaskFor(\''+a.id+'\')"><button class="btn sm" onclick="quickAddTaskFor(\''+a.id+'\')">Add</button></div>'+
+   (ts.length?'<div class="tklist" style="margin-top:10px">'+ts.map(taskRow).join("")+'</div>':'<div class="empty" style="padding:6px 0;text-align:left">No tasks yet.</div>')+'</div>';}
+function todayTasksHTML(){var c=taskCounts();
+  var list=TASKS.filter(function(t){return taskOverdue(t)||taskDueToday(t);}).sort(function(a,b){return (a.due||"")<(b.due||"")?-1:1;}).slice(0,6);
+  return '<div class="sec"><div class="sec-h"><h2>Today\'s tasks</h2><span class="count">'+c.dueToday+' today · '+c.overdue+' overdue</span><div class="grow"></div><button class="link" onclick="openTasks()">View all</button></div>'+
+   '<div class="list">'+(list.length?list.map(function(t){return taskRow(t);}).join(""):'<div class="empty">No tasks due today.</div>')+'</div></div>';}
+function updateTaskBadge(){var b=document.getElementById("taskBadge");if(!b)return;var c=taskCounts();if(c.badge>0){b.textContent=c.badge;b.classList.remove("hidden");}else b.classList.add("hidden");}
+function afterTaskChange(){updateTaskBadge();if(curView==="dashboard")renderDashboard();var dw=document.getElementById("drawer");if(dw&&!dw.classList.contains("hidden")&&/>Tasks</.test(dw.innerHTML))renderTasksDrawer();if(curView==="detail"&&curAcct)openDetail(curAcct);}
+function toggleCreate(e){if(e&&e.stopPropagation)e.stopPropagation();var m=document.getElementById("createMenu");if(m)m.classList.toggle("hidden");}
+document.addEventListener("click",function(e){var m=document.getElementById("createMenu");if(m&&!m.classList.contains("hidden")&&!(e.target.closest&&e.target.closest("#createWrap")))m.classList.add("hidden");});
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function exportData(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const u=URL.createObjectURL(blob),el=document.createElement("a");el.href=u;el.download="penn-mobile-wash-"+todayISO()+".json";el.click();URL.revokeObjectURL(u);toast("Backup downloaded");}
 function importData(){const inp=document.createElement("input");inp.type="file";inp.accept="application/json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(Array.isArray(d)){DB=d;save();setView("dashboard");applyRole();toast("Backup restored");}else toast("Invalid file");}catch(x){toast("Couldn't read file");}};rd.readAsText(f);};inp.click();}
 document.querySelectorAll("#nav button, #tabbar button[data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
-document.getElementById("addBtn").onclick=()=>openModal(null);
+updateTaskBadge();
 var _am=document.getElementById("addBtnM");if(_am)_am.onclick=()=>openModal(null);
 var _eb=document.getElementById("exportBtn");if(_eb)_eb.onclick=exportData;
 var _ib=document.getElementById("importBtn");if(_ib)_ib.onclick=importData;
