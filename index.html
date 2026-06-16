@@ -570,6 +570,46 @@
   .tabbar button{padding:6px 6px;font-size:10.5px;flex:1}
   .tabbar .ic{width:21px;height:21px}
 }
+html,body{overflow-x:hidden}
+.caljump{border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px;color:var(--ink);background:#fff}
+.emfull-hd{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.emfull-body{font-size:14px;line-height:1.6;color:var(--ink-2);margin:8px 0;white-space:normal}
+@media (max-width:620px){
+  /* clean stat strips -> 2-col cards (Sales / Team / Financials summaries) */
+  .strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+  .stat{padding:13px 14px;margin:0;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .stat .n{font-size:21px}
+  /* calendar header stacks cleanly */
+  .calbar{flex-direction:column;align-items:stretch;gap:10px}
+  .calttl{font-size:18px}
+  .calright{flex-direction:column;align-items:stretch;gap:8px;width:100%}
+  .seg2{display:flex;width:100%}
+  .seg2 button{flex:1;text-align:center}
+  .calnav{display:flex;gap:6px}
+  .calnav .btn{flex:1}
+  .caljump{width:100%}
+  /* month grid -> compact dots */
+  .calgrid .cell{min-height:54px;padding:4px}
+  .cn{font-size:12px;width:auto;height:auto;min-width:20px;padding:1px 3px}
+  .evs{flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center}
+  .evt{font-size:0;padding:0;width:auto;background:none!important;border-radius:0}
+  .evt .ed{margin:0;width:9px;height:9px;border-radius:50%}
+  .evt .eg{display:none}
+  .evmore{font-size:9.5px;width:100%;padding:0}
+  .ooo{font-size:0;padding:0;background:none!important;width:auto}
+  .ooo::before{margin:0;width:9px;height:9px}
+  .callegend{font-size:11px;gap:10px}
+  /* customer detail: single column + wrapping, no overflow */
+  .dcols{grid-template-columns:1fr;gap:0}
+  .dh{flex-wrap:wrap}
+  .dh .acts{width:100%;margin-top:10px}
+  .ir{flex-wrap:wrap}
+  .ir .btn,.ir .ix{margin-top:2px}
+  .facts{grid-template-columns:1fr 1fr}
+  .acts{flex-wrap:wrap}
+  /* sales pipeline cards full width */
+  .grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -746,7 +786,7 @@ function calEvents(startISO,endISO){var ev={};DB.forEach(function(a){if(a.schedu
 function calHeader(title){
   return '<div class="calbar"><div class="calttl">'+title+'</div><div class="calright">'+
     '<div class="seg2">'+["month","week","day"].map(function(v){return '<button class="'+(calView===v?"on":"")+'" onclick="setCalView(\''+v+'\')">'+v.charAt(0).toUpperCase()+v.slice(1)+'</button>';}).join("")+'</div>'+
-    '<button class="btn sm" onclick="addTimeOff()">+ Time off</button>'+
+    '<button class="btn sm" onclick="addTimeOff()">+ Time off</button>'+'<input type="date" class="caljump" value="'+calRef+'" onchange="calJump(this.value)" title="Jump to date">'+
     '<div class="calnav"><button class="btn sm" onclick="calNav(-1)" title="Previous">&#8249;</button><button class="btn sm" onclick="calToday()">Today</button><button class="btn sm" onclick="calNav(1)" title="Next">&#8250;</button></div></div></div>';}
 function wireCal(){
   document.querySelectorAll("#scheduleView .evt").forEach(function(b){b.onclick=function(e){e.stopPropagation();openJob(b.dataset.id);};});
@@ -1434,7 +1474,7 @@ function emailActions(e){if(e.status==="handled")return '<span class="emhandled"
   a.push('<button class="btn sm" onclick="markEmailHandled(\''+e.id+'\')">Mark handled</button>');
   return a.join("");}
 function emailRow(e){var sugg=emailSuggestion(e);
-  return '<div class="emrow"><div class="emhd"><div class="emav" style="background:'+colorFor(e.company||e.from)+'">'+initials(e.from)+'</div><div style="flex:1;min-width:0"><div class="emfrom">'+esc(e.from)+(e.company?' <span style="color:var(--muted);font-weight:400">· '+esc(e.company)+'</span>':"")+'</div><div class="emsub">'+esc(e.subject)+'</div></div><div class="emtime">'+esc(e.received)+'</div></div><div class="emprev">'+esc(e.preview)+'</div>'+(e.related?'<div class="emrel">Related: '+esc(e.related.label)+'</div>':"")+(sugg?'<div class="emsugg">'+sugg+'</div>':"")+'<div class="emacts">'+emailActions(e)+'</div></div>';}
+  return '<div class="emrow"><div class="emopen" style="cursor:pointer" onclick="openEmail(\''+e.id+'\')"><div class="emhd"><div class="emav" style="background:'+colorFor(e.company||e.from)+'">'+initials(e.from)+'</div><div style="flex:1;min-width:0"><div class="emfrom">'+esc(e.from)+(e.company?' <span style="color:var(--muted);font-weight:400">· '+esc(e.company)+'</span>':"")+'</div><div class="emsub">'+esc(e.subject)+'</div></div><div class="emtime">'+esc(e.received)+'</div></div><div class="emprev">'+esc(e.preview)+'</div>'+(e.related?'<div class="emrel">Related: '+esc(e.related.label)+'</div>':"")+(sugg?'<div class="emsugg">'+sugg+'</div>':"")+'</div><div class="emacts">'+emailActions(e)+'</div></div>';}
 function renderInbox(){var c=emailCounts();
   var list=EMAILS.filter(function(e){if(emailFilter==="needs")return e.status==="needs-reply";if(emailFilter==="new")return e.scenario==="inquiry";return true;});
   var conn='<div class="emconn"><span class="emdot"></span><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+EMAILADDR+'</div><div style="font-size:11.5px;color:var(--muted)">Connected · synced just now · <span class="emdemo">Demo connection</span></div></div><button class="btn sm" onclick="syncEmail()">Sync</button></div>';
@@ -1511,6 +1551,24 @@ function aiApproveCall(){CALLS.unshift({id:uid(),direction:"incoming",related:re
 function aiCreateTask(){TASKS.unshift({id:uid(),title:"Send quote to Northeast Transport",related:relInfo2("Northeast Transport"),due:addDays(todayISO(),3),dueTime:"10:00",priority:"high",status:"todo",notes:"From AI call summary (demo)",source:"call",created:todayISO()});saveTasks();updateTaskBadge();closeScrim();toast("Follow-up task created");}
 function openMore(){document.getElementById("moreSheet").classList.remove("hidden");}
 function closeMore(){document.getElementById("moreSheet").classList.add("hidden");}
+function calJump(dstr){if(!dstr)return;calRef=dstr;renderSchedule();}
+function emailActionsModal(e){var a=['<button class="btn ghost" onclick="closeScrim()">Close</button>'];
+  if(e.status!=="handled"){
+   if(e.scenario==="inquiry")a.push('<button class="btn primary" onclick="closeScrim();createInquiryFromEmail(\''+e.id+'\')">Create inquiry</button>');
+   if(e.scenario==="followup")a.push('<button class="btn primary" onclick="closeScrim();followupFromEmail(\''+e.id+'\')">Create follow-up task</button>');
+   if(e.scenario==="schedule")a.push('<button class="btn primary" onclick="closeScrim();applyScheduleSuggestion(\''+e.id+'\')">Update service days</button>');
+   if(e.scenario==="billing")a.push('<button class="btn primary" onclick="closeScrim();applyBillingSuggestion(\''+e.id+'\')">Update billing email</button>');
+   a.push('<button class="btn" onclick="draftReply(\''+e.id+'\')">Draft reply</button>');
+   a.push('<button class="btn" onclick="markEmailHandled(\''+e.id+'\');closeScrim()">Mark handled</button>');
+  }
+  return a.join("");}
+function openEmail(id){var e=EMAILS.find(function(x){return x.id===id;});if(!e)return;
+  openScrim('<div class="modal"><div class="mh"><h3>'+esc(e.subject)+'</h3></div><div class="mb">'+
+    '<div class="emfull-hd"><div class="emav" style="background:'+colorFor(e.company||e.from)+'">'+initials(e.from)+'</div><div style="flex:1;min-width:0"><div style="font-weight:650">'+esc(e.from)+(e.company?' · '+esc(e.company):"")+'</div><div style="font-size:12px;color:var(--muted);word-break:break-all">'+esc(e.fromEmail||"")+' · '+esc(e.received)+'</div></div></div>'+
+    (e.related?'<div class="emrel">Related: '+esc(e.related.label)+'</div>':"")+
+    '<div class="emfull-body">'+esc(e.body||e.preview).replace(/\n/g,"<br>")+'</div>'+
+    (emailSuggestion(e)?'<div class="emsugg">'+emailSuggestion(e)+'</div>':"")+
+    '</div><div class="mf" style="flex-wrap:wrap;gap:8px">'+emailActionsModal(e)+'</div></div>');}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
