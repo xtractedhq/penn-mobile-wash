@@ -525,6 +525,14 @@
 .emsugg::before{content:"💡 "}
 .emacts{display:flex;gap:7px;flex-wrap:wrap}
 .emhandled{font-size:12.5px;color:var(--green);font-weight:600}
+.aibox{background:var(--accent-soft);border:1px solid #cfe0fb;border-radius:10px;padding:12px 13px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+.acttl{position:relative}
+.actday{margin-bottom:14px}
+.actdate{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--faint);margin-bottom:8px}
+.actitem{display:flex;gap:11px;align-items:flex-start;padding:5px 0}
+.actdot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:0 0 auto;background:var(--muted)}
+.actdot.task{background:var(--accent)}.actdot.call{background:#7c4dbd}.actdot.email{background:var(--blue)}.actdot.invoice{background:var(--green)}.actdot.note{background:var(--faint)}
+.acttext{font-size:13.5px;line-height:1.45}
 </style>
 </head>
 <body>
@@ -543,7 +551,7 @@
     <header class="topbar"><div class="row">
       <div><h1 id="pageTitle">Overview</h1><div class="sub" id="pageSub"></div></div>
       <div class="search"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="searchInput" placeholder="Search customers, jobs..." autocomplete="off"></div>
-      <button class="iconbtn" id="inboxBtn" onclick="openInbox()" title="Inbox" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="hdrbadge hidden" id="inboxBadge"></span></button><button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openInquiryModal(null);toggleCreate()">Add inquiry</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button></div></div>
+      <button class="iconbtn" id="inboxBtn" onclick="openInbox()" title="Inbox" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="hdrbadge hidden" id="inboxBadge"></span></button><button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openInquiryModal(null);toggleCreate()">Add inquiry</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button><button onclick="openCallModal(null);toggleCreate()">Log call</button></div></div>
       <div class="profile-wrap"><button class="iconbtn" id="profileBtn" onclick="toggleMenu(event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></button>
         <div class="menu hidden" id="profileMenu">
           <button onclick="openSettings();toggleMenu()">Rates &amp; settings</button>
@@ -756,7 +764,7 @@ function openDetail(id){curAcct=id;uTab="trailer";
         '<div class="ug" id="ug"></div><div id="issuesBox"></div></div>'+
       '<div class="block"><h3>Visit history</h3>'+
         (a.log.length?'<div class="tl">'+a.log.map(l=>'<div class="tl-item"><div class="dot"></div><div class="b"><div class="t">'+l.done+'/'+l.total+' units · '+Math.round(l.done/Math.max(1,l.total)*100)+'% done</div><div class="m">'+fmtLong(l.date)+' · '+(l.crew||[]).join(", ")+'</div></div></div>').join("")+'</div>'
-          :'<div class="empty">No visits logged yet.</div>')+'</div>'+activityHTML(a)+
+          :'<div class="empty">No visits logged yet.</div>')+'</div>'+customerActivityHTML(a)+
     '</div><div>'+
       financialsHTML(a)+'<div class="block"><h3>Schedule</h3><div class="facts">'+
         '<div class="fact"><div class="l">Frequency</div><div class="v">'+freqLabel(a)+'</div></div>'+
@@ -1318,7 +1326,7 @@ function openInquiry(id){var i=INQUIRIES.find(function(x){return x.id===id;});if
    '<div class="dw-sec">What happens next?</div>'+((i.nextAction||i.nextFollowup)?'<div class="minfo"><b>'+(esc(i.nextAction)||"Follow up")+'</b>'+(i.nextFollowup?' · by '+fmt(i.nextFollowup):"")+'</div>':'<div class="dw-warn">⚠ No next action — this lead could go cold</div>')+
    '<div class="dw-sec">Move stage</div><div class="pick">'+["new","contacted","qualified","quote-needed","quote-sent","follow-up","won","lost"].map(function(st){return '<button type="button" class="'+(i.stage===st?"on":"")+'" onclick="setInquiryStage(\''+id+'\',\''+st+'\')">'+STAGE2[st].l+'</button>';}).join("")+'</div>'+
    (i.notes?'<div class="dw-sec">Notes</div><div class="minfo">'+esc(i.notes)+'</div>':"")+
-   '<div class="dw-sec">Tasks</div><div class="tk-quick"><input id="iqtkQuick" placeholder="Add a task…" onkeydown="if(event.key===\'Enter\')addInquiryTask(\''+id+'\')"><button class="btn sm" onclick="addInquiryTask(\''+id+'\')">Add</button></div>'+(tasks.length?'<div class="tklist" style="margin-top:8px">'+tasks.map(taskRow).join("")+'</div>':"")+
+   '<div class="dw-sec">Activity</div>'+activityTimelineHTML(id)+'<div style="margin:10px 0"><button class="btn sm" onclick="openCallModal(\''+id+'\')">Log call</button> <button class="btn sm ghost" onclick="openAICallDemo()">AI summary (demo)</button></div><div class="dw-sec">Tasks</div><div class="tk-quick"><input id="iqtkQuick" placeholder="Add a task…" onkeydown="if(event.key===\'Enter\')addInquiryTask(\''+id+'\')"><button class="btn sm" onclick="addInquiryTask(\''+id+'\')">Add</button></div>'+(tasks.length?'<div class="tklist" style="margin-top:8px">'+tasks.map(taskRow).join("")+'</div>':"")+
    '</div><div class="dw-f"><button class="btn" onclick="editInquiry(\''+id+'\')">Edit</button>'+(i.customerId?'<button class="btn primary" onclick="closeJob();openDetail(\''+i.customerId+'\')">Open customer</button>':'<button class="btn primary" onclick="convertInquiry(\''+id+'\')">Convert to customer</button>')+'</div>';
   document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
 function setInquiryStage(id,st){var i=INQUIRIES.find(function(x){return x.id===id;});i.stage=st;i.lastContacted=todayISO();saveInquiries();openInquiry(id);if(curView==="sales")renderSales();if(curView==="dashboard")renderDashboard();toast("Moved to "+STAGE2[st].l);}
@@ -1411,6 +1419,50 @@ function draftReply(id){var e=EMAILS.find(function(x){return x.id===id;});var bo
   openScrim('<div class="modal"><div class="mh"><h3>Draft reply to '+esc(e.from)+'</h3></div><div class="mb"><div class="emdemo" style="align-self:flex-start">AI-generated draft · demo</div><textarea id="rep_body" rows="9" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:inherit;font-size:14px">'+esc(body)+'</textarea></div><div class="mf" style="flex-wrap:wrap"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn" onclick="copyReply()">Copy</button><button class="btn" onclick="closeScrim();toast(\'Draft saved (demo)\')">Save draft</button><button class="btn primary" onclick="sendReplyDemo()">Send</button></div></div>');}
 function copyReply(){var t=document.getElementById("rep_body");t.select();try{document.execCommand("copy");}catch(e){}toast("Copied");}
 function sendReplyDemo(){closeScrim();alert("Demo: live sending requires connecting your real mailbox. Nothing was actually sent.");}
+function relInfo(id){var a=DB.find(function(x){return x.id===id;});if(a)return {type:"customer",id:a.id,label:a.name};var i=INQUIRIES.find(function(x){return x.id===id;});if(i)return {type:"inquiry",id:i.id,label:i.company};return null;}
+function relInfo2(name){var a=DB.find(function(x){return x.name===name;});if(a)return {type:"customer",id:a.id,label:a.name};var i=INQUIRIES.find(function(x){return x.company===name;});if(i)return {type:"inquiry",id:i.id,label:i.company};return null;}
+function loadCalls(){try{var r=localStorage.getItem("pennwash.calls");if(r)return JSON.parse(r);}catch(e){}var T=todayISO();
+  var seed=[{id:uid(),direction:"incoming",related:relInfo2("Wise"),date:addDays(T,-1),time:"09:15",durationMin:5,summary:"Confirmed Thursday service",nextStep:"",followup:"",ai:false,created:addDays(T,-1)},
+   {id:uid(),direction:"outgoing",related:relInfo2("Valley Produce"),date:addDays(T,-7),time:"14:00",durationMin:8,summary:"Discussed weekly fleet wash pricing",nextStep:"Send pricing",followup:addDays(T,-2),ai:false,created:addDays(T,-7)}];
+  try{localStorage.setItem("pennwash.calls",JSON.stringify(seed));}catch(e){}return seed;}
+var CALLS=loadCalls();
+function saveCalls(){try{localStorage.setItem("pennwash.calls",JSON.stringify(CALLS));}catch(e){}}
+function emailDate(e){var r=(e.received||"").toLowerCase();if(/just now|hour|minute/.test(r))return todayISO();if(/yesterday/.test(r))return addDays(todayISO(),-1);var m=r.match(/(\d+)\s*day/);if(m)return addDays(todayISO(),-(+m[1]));return todayISO();}
+function activityItems(id){var items=[];
+  TASKS.filter(function(t){return t.related&&t.related.id===id;}).forEach(function(t){items.push({date:t.due||t.created||todayISO(),type:"task",text:(t.status==="done"?"Task completed":"Task")+": "+t.title});});
+  CALLS.filter(function(c){return c.related&&c.related.id===id;}).forEach(function(c){items.push({date:c.date,type:"call",text:(c.direction==="incoming"?"Incoming":"Outgoing")+" call"+(c.durationMin?" ("+c.durationMin+"m)":"")+(c.summary?" — "+c.summary:"")});});
+  EMAILS.filter(function(e){return e.related&&e.related.id===id;}).forEach(function(e){items.push({date:emailDate(e),type:"email",text:"Email: "+e.subject});});
+  var a=DB.find(function(x){return x.id===id;});
+  if(a){(a.activity||[]).forEach(function(ac){items.push({date:ac.date,type:"note",text:actLabel(ac.type)+(ac.text?": "+ac.text:"")});});
+   (a.invoices||[]).forEach(function(i){items.push({date:i.date,type:"invoice",text:"Invoice #"+i.n+" · "+money(i.amount)+(i.paid?" (paid)":(i.status==="sent"?" (sent)":" (draft)"))});});}
+  items.sort(function(x,y){return (y.date||"")<(x.date||"")?-1:((y.date||"")>(x.date||"")?1:0);});return items;}
+function activityTimelineHTML(id){var items=activityItems(id);if(!items.length)return '<div class="empty" style="padding:6px 0;text-align:left">No activity yet.</div>';
+  var groups={},order=[];items.forEach(function(it){var key=it.date===todayISO()?"Today":(it.date===addDays(todayISO(),-1)?"Yesterday":fmtLong(it.date));if(!groups[key]){groups[key]=[];order.push(key);}groups[key].push(it);});
+  return '<div class="acttl">'+order.map(function(k){return '<div class="actday"><div class="actdate">'+k+'</div>'+groups[k].map(function(it){return '<div class="actitem"><span class="actdot '+it.type+'"></span><div class="acttext">'+esc(it.text)+'</div></div>';}).join("")+'</div>';}).join("")+'</div>';}
+function customerActivityHTML(a){return '<div class="block"><h3>Activity</h3><div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><button class="btn sm" onclick="openCallModal(\''+a.id+'\')">Log call</button><button class="btn sm" onclick="addActivity(\''+a.id+'\')">+ Note</button><button class="btn sm ghost" onclick="openAICallDemo()">AI call summary (demo)</button></div>'+activityTimelineHTML(a.id)+'</div>';}
+function openCallModal(relId){
+  var custOpts='<option value="">— none —</option>'+'<optgroup label="Customers">'+DB.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(a){return '<option value="'+a.id+'"'+(relId===a.id?" selected":"")+'>'+esc(a.name)+'</option>';}).join("")+'</optgroup><optgroup label="Inquiries">'+INQUIRIES.map(function(i){return '<option value="'+i.id+'"'+(relId===i.id?" selected":"")+'>'+esc(i.company)+'</option>';}).join("")+'</optgroup>';
+  openScrim('<div class="modal"><div class="mh"><h3>Log a call</h3></div><div class="mb">'+
+    '<div class="two"><label class="fld">Direction<select id="cl_dir"><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option></select></label><label class="fld">Customer / inquiry<select id="cl_rel">'+custOpts+'</select></label></div>'+
+    '<div class="two"><label class="fld">Date<input id="cl_date" type="date" value="'+todayISO()+'"></label><label class="fld">Duration (min)<input id="cl_dur" type="number" min="0" value="5"></label></div>'+
+    '<label class="fld">Summary<input id="cl_sum" placeholder="What was discussed?"></label>'+
+    '<div class="two"><label class="fld">Next step<input id="cl_next"></label><label class="fld">Follow-up date<input id="cl_fu" type="date"></label></div>'+
+    '<button class="btn sm ghost" onclick="openAICallDemo()">Try AI call summary (demo)</button>'+
+    '</div><div class="mf"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn primary" id="clSave">Log call</button></div></div>');
+  document.getElementById("clSave").onclick=function(){var rid=document.getElementById("cl_rel").value;
+    var call={id:uid(),direction:document.getElementById("cl_dir").value,related:rid?relInfo(rid):null,date:document.getElementById("cl_date").value||todayISO(),time:"",durationMin:+document.getElementById("cl_dur").value||0,summary:document.getElementById("cl_sum").value.trim(),nextStep:document.getElementById("cl_next").value.trim(),followup:document.getElementById("cl_fu").value||"",ai:false,created:todayISO()};
+    CALLS.unshift(call);saveCalls();
+    if(call.followup&&call.related){TASKS.unshift({id:uid(),title:"Follow up — "+call.related.label,related:call.related,due:call.followup,dueTime:"",priority:"med",status:"todo",notes:call.nextStep||"",source:"call",created:todayISO()});saveTasks();updateTaskBadge();}
+    closeScrim();toast("Call logged");if(curView==="detail"&&curAcct)openDetail(curAcct);if(curView==="sales")renderSales();};}
+function openAICallDemo(){var summary="David manages a 32-truck fleet in Wilkes-Barre. They currently use an inconsistent local provider and are interested in Tuesday and Thursday service. They need pricing by Friday.";
+  openScrim('<div class="modal"><div class="mh"><h3>AI call summary</h3></div><div class="mb">'+
+   '<div class="emdemo" style="align-self:flex-start">Demo · requires a connected business phone + recording consent</div>'+
+   '<div class="minfo"><b>Incoming call — Northeast Transport</b> · 6m 42s</div>'+
+   '<div class="aibox">'+esc(summary)+'</div>'+
+   '<div class="dw-sec">Suggested next steps</div><div class="minfo">• Create inquiry &nbsp;• Prepare quote &nbsp;• Follow up Friday 10 AM &nbsp;• Save preferred days (Tue/Thu)</div>'+
+   '</div><div class="mf" style="flex-wrap:wrap;gap:8px"><button class="btn ghost" onclick="closeScrim()">Discard</button><button class="btn" onclick="aiCreateTask()">Create follow-up task</button><button class="btn primary" onclick="aiApproveCall()">Approve &amp; log call</button></div></div>');}
+function aiApproveCall(){CALLS.unshift({id:uid(),direction:"incoming",related:relInfo2("Northeast Transport"),date:todayISO(),time:"",durationMin:7,summary:"32-truck fleet, Wilkes-Barre. Wants Tue/Thu service, needs pricing by Friday.",nextStep:"Send quote by Friday",followup:addDays(todayISO(),3),ai:true,created:todayISO()});saveCalls();closeScrim();toast("Call logged from AI summary (demo)");if(curView==="sales")renderSales();if(curView==="detail"&&curAcct)openDetail(curAcct);}
+function aiCreateTask(){TASKS.unshift({id:uid(),title:"Send quote to Northeast Transport",related:relInfo2("Northeast Transport"),due:addDays(todayISO(),3),dueTime:"10:00",priority:"high",status:"todo",notes:"From AI call summary (demo)",source:"call",created:todayISO()});saveTasks();updateTaskBadge();closeScrim();toast("Follow-up task created");}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
