@@ -471,6 +471,26 @@
 .callegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted);font-weight:500}
 .callegend .lgd{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
 #daysPick button{min-width:38px}
+.wkload{width:130px;flex:0 0 130px;text-align:right}
+.wkbar{height:7px;border-radius:5px;background:var(--soft-2);overflow:hidden;margin-bottom:5px}
+.wkbar>i{display:block;height:100%;border-radius:5px}
+.wknum{font-size:12.5px;font-weight:650;font-variant-numeric:tabular-nums}
+.mrow{cursor:pointer}
+.varbadge{display:inline-block;font-size:12.5px;font-weight:650;padding:5px 11px;border-radius:8px;margin:6px 0 2px}
+.varbadge.over{color:var(--red);background:var(--red-soft)}
+.varbadge.under{color:var(--amber);background:var(--amber-soft)}
+.varbadge.ok{color:var(--green);background:var(--green-soft)}
+.spark{position:relative;display:flex;align-items:flex-end;gap:6px;height:64px;padding:4px 0;border-bottom:1px solid var(--line-2)}
+.sparkcol{flex:1;display:flex;align-items:flex-end;height:100%}
+.sparkbar{width:100%;background:var(--soft-2);border-radius:4px 4px 0 0}
+.sparkbar.cur{background:var(--accent)}
+.sparktgt{position:absolute;left:0;right:0;height:0;border-top:2px dashed var(--amber);z-index:1}
+.spklbl{font-size:11px;color:var(--faint);margin-top:6px}
+.minfo{font-size:13px;color:var(--ink-2);padding:2px 0}
+.upitem{font-size:13px;padding:5px 0;border-bottom:1px solid var(--line-2)}
+.upitem:last-child{border-bottom:none}
+.upitem b{font-variant-numeric:tabular-nums;color:var(--muted);margin-right:6px}
+@media (max-width:560px){.wkload{width:96px;flex-basis:96px}}
 </style>
 </head>
 <body>
@@ -851,23 +871,7 @@ function startClockTimer(){if(clockTimer)return;clockTimer=setInterval(updateEla
 function updateElapsed(){document.querySelectorAll(".shift-elapsed").forEach(function(el){var st=parseInt(el.getAttribute("data-start"));
   var s=Math.floor((Date.now()-st)/1000),hh=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;
   el.textContent=(hh?hh+":":"")+(hh?String(mm).padStart(2,"0"):mm)+":"+String(ss).padStart(2,"0");});}
-function renderCrew(){document.getElementById("pageSub").textContent="Workforce and hours this week";
-  var weekAgo=addDays(todayISO(),-6);
-  var data=CREW.map(function(m){var mins=0,today=0,active=null;
-    DB.forEach(function(a){(a.shifts||[]).forEach(function(s){if(s.worker===m&&s.date>=weekAgo&&s.approved!==false){mins+=s.minutes;if(s.date===todayISO())today+=s.minutes;}});
-      if(a.active&&a.active[m])active={acct:a.name,start:a.active[m]};});
-    return{m:m,mins:mins,today:today,active:active};});
-  var onNow=data.filter(function(d){return d.active;});
-  var html='<div class="strip">'+
-    '<div class="stat"><div class="n">'+CREW.length+'</div><div class="l">Workers</div></div>'+
-    '<div class="stat"><div class="n" style="color:var(--accent)">'+onNow.length+'</div><div class="l"><span class="pip" style="background:var(--accent)"></span>On the clock</div></div>'+
-    '<div class="stat"><div class="n">'+hrs(data.reduce(function(t,d){return t+d.mins;},0))+'</div><div class="l">Logged this week</div></div></div>';
-  html+='<div class="sec-h"><h2>Crew</h2><span class="count">'+CREW.length+'</span></div><div class="list">'+
-    data.map(function(d){return '<div class="row" style="cursor:default">'+av(d.m)+
-      '<div class="grow"><div class="nm">'+d.m+'</div><div class="sub">'+(d.active?("On the clock at "+d.active.acct):(d.today?(hrs(d.today)+" logged today"):"Off the clock"))+'</div></div>'+
-      (d.active?'<span class="status s-ok"><span class="d" style="background:var(--green)"></span><span class="shift-elapsed" data-start="'+d.active.start+'">0:00</span></span>':"")+
-      '<div class="col" style="text-align:right;width:118px"><span class="ch">This week</span>'+hrs(d.mins)+'</div></div>';}).join("")+'</div>';
-  html+=pendingHTML();html+=timeoffHTML();document.getElementById("crewView").innerHTML=html;startClockTimer();updateElapsed();}
+/* renderCrew replaced by team module */
 var role="admin",workerName="",workerJob=null,wkTab="trailer";
 try{role=localStorage.getItem("pennwash.role")||"admin";workerName=localStorage.getItem("pennwash.worker")||"";}catch(e){}
 function setRole(r){role=r;try{localStorage.setItem("pennwash.role",r);}catch(e){}applyRole();}
@@ -1099,6 +1103,58 @@ function invoicesHTML(a){
     return '<div class="ir" style="align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' · '+money(i.amount)+' <span class="ipill" style="color:'+lc+';background:var(--soft)">'+lbl+'</span></div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue · was due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div>'+
     '<button class="ix" onclick="editInvoice(\''+a.id+'\','+k+')">edit</button>'+(!i.paid&&i.status!=="sent"?'<button class="ix" onclick="markSent(\''+a.id+'\','+k+')">send</button>':"")+'<button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Unpay":"Mark paid")+'</button></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div>';
   return billing+'<div class="block"><h3>Invoices</h3>'+rows+'<button class="btn sm" style="margin-top:12px" onclick="createInvoice(\''+a.id+'\')">+ New invoice</button></div>';}
+var TEAMDEF={"Bob":{target:40,weeks:[39,42,40,44,41,24],days:[1,2,3,4,5]},"Ryan":{target:40,weeks:[37,38,41,39,40,22],days:[1,2,3,4,5]},"Kenny":{target:40,weeks:[41,43,45,44,46,28],days:[1,2,3,4,5,6]},"John":{target:32,weeks:[30,28,33,31,29,18],days:[2,3,4]},"Dave":{target:40,weeks:[40,41,38,42,43,25],days:[1,2,3,4,5]},"Mike":{target:24,weeks:[22,20,25,23,24,12],days:[1,3,5]}};
+function loadTeam(){try{var r=localStorage.getItem("pennwash.team");if(r)return JSON.parse(r);}catch(e){}try{localStorage.setItem("pennwash.team",JSON.stringify(TEAMDEF));}catch(e){}return JSON.parse(JSON.stringify(TEAMDEF));}
+var TEAM=loadTeam();
+function saveTeam(){try{localStorage.setItem("pennwash.team",JSON.stringify(TEAM));}catch(e){}}
+function memTarget(m){return TEAM[m]&&TEAM[m].target!=null?TEAM[m].target:40;}
+function memWeeks(m){return (TEAM[m]&&TEAM[m].weeks)||[0];}
+function avgWeekly(m){var w=memWeeks(m);var done=w.length>1?w.slice(0,-1):w;return Math.round(done.reduce(function(t,x){return t+x;},0)/done.length);}
+function liveHoursThisWeek(m){var wk=addDays(todayISO(),-6),mins=0;DB.forEach(function(a){(a.shifts||[]).forEach(function(s){if(s.worker===m&&s.date>=wk&&s.approved!==false)mins+=s.minutes;});if(a.active&&a.active[m])mins+=Math.round((Date.now()-a.active[m])/60000);});return mins/60;}
+function actualThisWeek(m){var w=memWeeks(m);return Math.round((w[w.length-1]||0)+liveHoursThisWeek(m));}
+function scheduledHoursThisWeek(m){var T=todayISO();var ev=calEvents(T,addDays(T,6));var h=0;Object.keys(ev).forEach(function(k){ev[k].forEach(function(a){if((a.crew||[]).indexOf(m)>-1)h+=(a.avgMin||0)/60;});});return h;}
+function upcomingHours(m,days){var T=todayISO();var ev=calEvents(T,addDays(T,days));var h=0;Object.keys(ev).forEach(function(k){ev[k].forEach(function(a){if((a.crew||[]).indexOf(m)>-1)h+=(a.avgMin||0)/60;});});return h;}
+function jobsTodayFor(m){var T=todayISO();var ev=calEvents(T,T);var n=0;(ev[T]||[]).forEach(function(a){if((a.crew||[]).indexOf(m)>-1)n++;});return n;}
+function upcomingJobsFor(m){var T=todayISO();var ev=calEvents(addDays(T,1),addDays(T,13));var out=[];Object.keys(ev).sort().forEach(function(k){ev[k].forEach(function(a){if((a.crew||[]).indexOf(m)>-1)out.push({date:k,a:a});});});return out;}
+function completedThisWeekFor(m){var wk=addDays(todayISO(),-6),n=0;DB.forEach(function(a){(a.log||[]).forEach(function(l){if(l.date>=wk&&(l.crew||[]).indexOf(m)>-1)n++;});});return n;}
+function isOffToday(m){return oooOn(todayISO()).some(function(t){return t.worker===m;});}
+function isOnClock(m){return DB.some(function(a){return a.active&&a.active[m];});}
+function sparkline(weeks,tgt){var max=Math.max(tgt,Math.max.apply(null,weeks),1);return '<div class="spark"><div class="sparktgt" style="bottom:'+Math.round(tgt/max*100)+'%"></div>'+weeks.map(function(h,i){var ph=Math.max(4,Math.round(h/max*100));var last=i===weeks.length-1;return '<div class="sparkcol" title="'+h+'h"><div class="sparkbar'+(last?" cur":"")+'" style="height:'+ph+'%"></div></div>';}).join("")+'</div>';}
+function setTarget(m){var v=+document.getElementById("tgtInput").value;if(v>=0){TEAM[m]=TEAM[m]||{};TEAM[m].target=v;saveTeam();closeJob();if(curView==="crew")renderCrew();toast("Target updated for "+m);}}
+function openMember(m){var sched=scheduledHoursThisWeek(m),actual=actualThisWeek(m),avg=avgWeekly(m),tgt=memTarget(m),varc=Math.round(sched-tgt);
+  var up=upcomingJobsFor(m),off=TIMEOFF.filter(function(t){return t.worker===m&&t.end>=todayISO();});
+  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(m)+'<div style="min-width:0"><div class="dw-nm">'+m+'</div><div class="dw-loc">'+(isOffToday(m)?"Off today":(isOnClock(m)?"On the clock":"Available"))+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
+   '<div class="dw-b">'+
+   '<div class="dw-facts"><div><span>Scheduled / wk</span><b>'+Math.round(sched)+'h</b></div><div><span>Actual / wk</span><b>'+actual+'h</b></div><div><span>Avg / wk</span><b>'+avg+'h</b></div><div><span>Target / wk</span><b>'+tgt+'h</b></div></div>'+
+   '<div class="varbadge '+(varc>0?"over":(sched<tgt*0.9?"under":"ok"))+'">'+(varc>0?"+"+varc+"h over target":(varc<0?varc+"h vs target":"On target"))+'</div>'+
+   '<div class="dw-sec">Recent weekly hours</div>'+sparkline(memWeeks(m),tgt)+'<div class="spklbl">Bar = actual hours · line = target · last bar is this week</div>'+
+   '<div class="dw-sec">This week</div><div class="minfo">'+jobsTodayFor(m)+' jobs today · '+completedThisWeekFor(m)+' completed · typical days '+((TEAM[m]&&TEAM[m].days)?TEAM[m].days.map(function(d){return DOW3[d];}).join(", "):"—")+'</div>'+
+   (off.length?'<div class="dw-sec">Time off</div>'+off.map(function(t){return '<div class="minfo">'+fmt(t.start)+' – '+fmt(t.end)+(t.reason?" · "+esc(t.reason):"")+'</div>';}).join(""):"")+
+   '<div class="dw-sec">Upcoming assignments</div>'+(up.length?up.slice(0,8).map(function(o){return '<div class="upitem"><b>'+fmt(o.date)+'</b> '+esc(o.a.name)+' · ~'+hrs(o.a.avgMin)+'</div>';}).join(""):'<div class="minfo">None in the next 2 weeks</div>')+
+   '<div class="dw-sec">Target weekly hours</div><div class="dw-resched"><input type="number" id="tgtInput" value="'+tgt+'" min="0"><button class="btn sm" onclick="setTarget(\''+m+'\')">Update</button></div>'+
+   '</div>';
+  document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
+function renderCrew(){document.getElementById("pageSub").textContent="Capacity & workload planning";
+  var data=CREW.map(function(m){return {m:m,target:memTarget(m),sched:scheduledHoursThisWeek(m),actual:actualThisWeek(m),avg:avgWeekly(m),jt:jobsTodayFor(m),off:isOffToday(m),onClock:isOnClock(m)};});
+  var capacity=data.reduce(function(t,d){return t+d.target;},0),schedTotal=data.reduce(function(t,d){return t+d.sched;},0);
+  var availCap=Math.max(0,Math.round(capacity-schedTotal)),util=capacity?Math.round(schedTotal/capacity*100):0;
+  var working=data.filter(function(d){return d.jt>0||d.onClock;}).length,offCount=data.filter(function(d){return d.off;}).length;
+  var ins=[];ins.push({s:"ok",t:availCap+" hours of available capacity this week"});
+  if(schedTotal>capacity)ins.push({s:"red",t:"Scheduled workload exceeds current staffing — "+Math.round(schedTotal)+"h vs "+capacity+"h capacity"});
+  data.filter(function(d){return d.sched>d.target;}).forEach(function(d){ins.push({s:"red",t:d.m+" is over target ("+Math.round(d.sched)+"h / "+d.target+"h)"});});
+  data.filter(function(d){return d.sched>=d.target*0.9&&d.sched<=d.target;}).forEach(function(d){ins.push({s:"amber",t:d.m+" is approaching capacity ("+Math.round(d.sched)+"h / "+d.target+"h)"});});
+  if(util>=85)ins.push({s:"red",t:"Crew utilization is "+util+"% — you may need another crew member soon"});
+  var st=function(n,l,c){return '<div class="stat"><div class="n"'+(c?' style="color:'+c+'"':'')+'>'+n+'</div><div class="l">'+l+'</div></div>';};
+  var html='<div class="strip">'+st(working,"Working today")+st((CREW.length-offCount)+" / "+CREW.length,"Available")+st(Math.round(schedTotal)+"h","Scheduled this week")+st(capacity+"h","Team capacity")+st(util+"%","Utilization",util>=85?"var(--red)":(util>=70?"var(--amber)":null))+'</div>';
+  html+='<div class="sec"><div class="sec-h"><h2>Planning insights</h2></div><div class="attn">'+ins.map(function(x){var col=x.s==="red"?"var(--red)":x.s==="amber"?"var(--amber)":"var(--green)";var bg=x.s==="red"?"var(--red-soft)":x.s==="amber"?"var(--amber-soft)":"var(--green-soft)";return '<div class="attn-row" style="cursor:default"><div class="attn-ic" style="color:'+col+';background:'+bg+'">'+(x.s==="red"?"!":x.s==="amber"?"•":"✓")+'</div><div><div class="t">'+x.t+'</div></div></div>';}).join("")+'</div></div>';
+  html+='<div class="sec-h"><h2>Team</h2><span class="count">'+CREW.length+'</span></div><div class="list">'+data.map(function(d){
+    var p=Math.min(100,Math.round(d.sched/Math.max(1,d.target)*100));var col=d.sched>d.target?"var(--red)":(d.sched>=d.target*0.9?"var(--amber)":"var(--accent)");
+    return '<div class="row mrow" data-m="'+d.m+'">'+av(d.m)+'<div class="grow"><div class="nm">'+d.m+(d.off?' <span class="prio" style="color:var(--amber);background:var(--amber-soft)">Off today</span>':(d.onClock?' <span class="prio" style="color:var(--green);background:var(--green-soft)">On clock</span>':''))+'</div><div class="sub">'+d.jt+' jobs today · avg '+d.avg+'h/wk · target '+d.target+'h</div></div>'+
+      '<div class="wkload"><div class="wkbar"><i style="width:'+p+'%;background:'+col+'"></i></div><div class="wknum">'+Math.round(d.sched)+'h <span style="color:var(--faint)">/ '+d.target+'h</span></div></div></div>';}).join("")+'</div>';
+  html+=pendingHTML();html+=timeoffHTML();
+  document.getElementById("crewView").innerHTML=html;
+  document.querySelectorAll("#crewView .mrow").forEach(function(r){r.onclick=function(){openMember(r.dataset.m);};});
+  startClockTimer();updateElapsed();}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
