@@ -509,6 +509,22 @@
 .createwrap{position:relative}
 .inqcard .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:760px){.tabbar button{padding:5px 7px;font-size:10px}.tabbar .ic{width:19px;height:19px}}
+.emconn{display:flex;align-items:center;gap:10px;background:var(--green-soft);border:1px solid #bfe6c9;border-radius:11px;padding:11px 13px;margin-bottom:12px}
+.emdot{width:9px;height:9px;border-radius:50%;background:var(--green);flex:0 0 auto;box-shadow:0 0 0 3px rgba(21,128,61,.15)}
+.emdemo{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--amber);background:var(--amber-soft);padding:1px 6px;border-radius:5px}
+.emlist{display:flex;flex-direction:column;gap:12px}
+.emrow{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.emhd{display:flex;align-items:center;gap:10px}
+.emav{width:30px;height:30px;border-radius:8px;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.emfrom{font-size:13.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.emsub{font-size:12.5px;color:var(--ink-2);margin-top:1px}
+.emtime{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.emprev{font-size:12.5px;color:var(--muted);margin:8px 0;line-height:1.45}
+.emrel{font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px}
+.emsugg{font-size:12.5px;color:var(--ink-2);background:var(--accent-soft);border-radius:8px;padding:8px 10px;margin-bottom:9px}
+.emsugg::before{content:"💡 "}
+.emacts{display:flex;gap:7px;flex-wrap:wrap}
+.emhandled{font-size:12.5px;color:var(--green);font-weight:600}
 </style>
 </head>
 <body>
@@ -527,7 +543,7 @@
     <header class="topbar"><div class="row">
       <div><h1 id="pageTitle">Overview</h1><div class="sub" id="pageSub"></div></div>
       <div class="search"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="searchInput" placeholder="Search customers, jobs..." autocomplete="off"></div>
-      <button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openInquiryModal(null);toggleCreate()">Add inquiry</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button></div></div>
+      <button class="iconbtn" id="inboxBtn" onclick="openInbox()" title="Inbox" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="hdrbadge hidden" id="inboxBadge"></span></button><button class="iconbtn" id="tasksBtn" onclick="openTasks()" title="Tasks" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg><span class="hdrbadge hidden" id="taskBadge"></span></button><div class="createwrap" id="createWrap"><button class="btn primary" id="addBtn" onclick="toggleCreate(event)"><svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Create</button><div class="menu hidden" id="createMenu"><button onclick="openModal(null);toggleCreate()">Add customer</button><button onclick="openInquiryModal(null);toggleCreate()">Add inquiry</button><button onclick="openTaskModal(null);toggleCreate()">Add task</button></div></div>
       <div class="profile-wrap"><button class="iconbtn" id="profileBtn" onclick="toggleMenu(event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></button>
         <div class="menu hidden" id="profileMenu">
           <button onclick="openSettings();toggleMenu()">Rates &amp; settings</button>
@@ -1038,6 +1054,7 @@ function buildAttention(){var att=[];
   DB.filter(function(a){return a.nextOverride&&a.nextOverride<todayISO();}).forEach(function(a){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>',t:"Missed rescheduled visit",d:a.name+" \u00b7 was due "+fmt(a.nextOverride),id:a.id});});
   TASKS.filter(function(t){return taskOverdue(t);}).forEach(function(t){att.push({sev:"red",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>',t:"Overdue task",d:esc(t.title)+(t.related?" \u00b7 "+esc(t.related.label):""),id:(t.related&&t.related.id)||""});});
   INQUIRIES.filter(function(i){return needsFollowup(i);}).forEach(function(i){att.push({sev:"amber",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 8 9 6 9-6"/></svg>',t:"Inquiry needs follow-up",d:esc(i.company)+(i.nextFollowup?" \u00b7 follow-up overdue":" \u00b7 no follow-up set"),id:i.id,kind:"inquiry"});});
+  EMAILS.filter(function(e){return e.status==="needs-reply";}).slice(0,4).forEach(function(e){att.push({sev:"blue",ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',t:"Email needs a reply",d:esc(e.company||e.from)+" \u00b7 "+esc(e.subject),id:"",kind:"email"});});
   return att;}
 function renderDashboard(){
   var h=new Date().getHours(),g=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
@@ -1064,7 +1081,7 @@ function renderDashboard(){
   html+='<div class="sec"><div class="sec-h"><h2>Today\'s schedule</h2><span class="count">'+dueToday.length+'</span><div class="grow"></div><button class="link" onclick="setView(\'schedule\')">Open calendar</button></div>'+
     '<div class="list">'+(todayJobs.length?todayJobs.map(function(a){var c=counts(a);return '<div class="row" data-id="'+a.id+'">'+av(a.name)+'<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+(a.location||"")+' · '+c.total+' units</div></div>'+crewStack(a.crew)+'<div style="width:118px;text-align:right">'+statusHTML(jobStatusOf(a))+'</div></div>';}).join(""):'<div class="empty">No jobs due today — next ones are on the calendar.</div>')+'</div></div>';
   html+=todayTasksHTML();document.getElementById("dashboardView").innerHTML=html;
-  document.querySelectorAll("#dashboardView .attn-row, #dashboardView .row").forEach(function(r){r.onclick=function(){if(r.dataset.kind==="inquiry")openInquiry(r.dataset.id);else if(r.dataset.id)openDetail(r.dataset.id);};});
+  document.querySelectorAll("#dashboardView .attn-row, #dashboardView .row").forEach(function(r){r.onclick=function(){if(r.dataset.kind==="email")openInbox();else if(r.dataset.kind==="inquiry")openInquiry(r.dataset.id);else if(r.dataset.id)openDetail(r.dataset.id);};});
 }
 function receivablesHTML(){var ov=overdueInvoices();if(!ov.length&&!totalOutstanding())return "";
   return '<div class="sec" style="margin-top:30px"><div class="sec-h"><h2>Receivables</h2><span class="count">'+money(totalOutstanding())+' outstanding</span></div>'+
@@ -1332,13 +1349,75 @@ function openInquiryModal(id){var i=id?INQUIRIES.find(function(x){return x.id===
     if(isNew){INQUIRIES.unshift(Object.assign({id:uid(),lastContacted:"",created:todayISO()},obj));}else{Object.assign(i,obj);}
     saveInquiries();closeScrim();if(curView==="sales")renderSales();else setView("sales");if(curView==="dashboard")renderDashboard();toast(isNew?"Inquiry added":"Inquiry saved");};}
 function deleteInquiry(id){INQUIRIES=INQUIRIES.filter(function(x){return x.id!==id;});saveInquiries();closeScrim();closeJob();if(curView==="sales")renderSales();toast("Inquiry deleted");}
+var EMAILADDR="jsmith@pennmobilewash.com";var emailFilter="needs";
+function loadEmails(){try{var r=localStorage.getItem("pennwash.emails");if(r)return JSON.parse(r);}catch(e){}
+  function rel(name,type){var arr=type==="inquiry"?INQUIRIES:DB;var x=arr.find(function(a){return (a.company||a.name)===name;});return x?{type:type,id:x.id,label:name}:null;}
+  var seed=[
+   {id:uid(),from:"Mark Hudson",fromEmail:"mhudson@hudsonfreight.com",company:"Hudson Freight Lines",subject:"Fleet washing inquiry — 32 trucks",preview:"We have 32 trucks and are looking for a quote for weekly washing...",body:"Hi,\n\nWe have 32 trucks and are looking for a quote for weekly washing at our Wilkes-Barre location. We'd like to start within the next few weeks. Can you send pricing?\n\nThanks,\nMark Hudson\nHudson Freight Lines",received:"2 hours ago",related:null,status:"needs-reply",scenario:"inquiry",extract:{company:"Hudson Freight Lines",contact:"Mark Hudson",email:"mhudson@hudsonfreight.com",fleetSize:32,frequency:"Weekly",location:"Wilkes-Barre, PA",service:"Fleet wash"}},
+   {id:uid(),from:"Northeast Transport (no reply)",fromEmail:"dmiller@netrans.com",company:"Northeast Transport",subject:"Re: Fleet washing quote",preview:"No reply received after the quote was sent 5 days ago.",body:"You sent a quote to David Miller (Northeast Transport) 5 days ago and there has been no reply.",received:"5 days ago",related:rel("Northeast Transport","inquiry"),status:"needs-reply",scenario:"followup"},
+   {id:uid(),from:"Tom Reed",fromEmail:"tom@chickencoop.net",company:"Chicken Coop",subject:"Re: Scheduling",preview:"Tuesday and Thursday mornings work best for us.",body:"Tuesday and Thursday mornings work best for us going forward.\n\n- Tom",received:"Yesterday",related:rel("Chicken Coop","customer"),status:"needs-reply",scenario:"schedule",suggest:{days:[2,4],label:"Tuesday & Thursday"}},
+   {id:uid(),from:"Sarah Mitchell",fromEmail:"sarah@steelcase.com",company:"Steelcase",subject:"Invoice delivery",preview:"Please send all invoices to accounting@steelcase.com going forward.",body:"Please send all invoices to accounting@steelcase.com going forward.\n\nThanks,\nSarah",received:"Yesterday",related:rel("Steelcase","customer"),status:"needs-reply",scenario:"billing",suggest:{billingEmail:"accounting@steelcase.com"}},
+   {id:uid(),from:"Mike Johnson",fromEmail:"mike@wise.com",company:"Wise",subject:"Thursday confirmed",preview:"Confirmed for Thursday this week, thanks!",body:"Confirmed for Thursday this week, thanks!",received:"2 days ago",related:rel("Wise","customer"),status:"handled",scenario:null}];
+  try{localStorage.setItem("pennwash.emails",JSON.stringify(seed));}catch(e){}return seed;}
+var EMAILS=loadEmails();
+function saveEmails(){try{localStorage.setItem("pennwash.emails",JSON.stringify(EMAILS));}catch(e){}}
+function emailCounts(){return {needs:EMAILS.filter(function(e){return e.status==="needs-reply";}).length};}
+function updateInboxBadge(){var b=document.getElementById("inboxBadge");if(!b)return;var n=emailCounts().needs;if(n>0){b.textContent=n;b.classList.remove("hidden");}else b.classList.add("hidden");}
+function openInbox(){renderInbox();document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
+function setEmailFilter(f){emailFilter=f;renderInbox();}
+function afterEmailChange(){updateInboxBadge();var dw=document.getElementById("drawer");if(dw&&!dw.classList.contains("hidden")&&/>Inbox</.test(dw.innerHTML))renderInbox();if(curView==="dashboard")renderDashboard();}
+function emailSuggestion(e){if(e.status==="handled")return"";
+  if(e.scenario==="inquiry")return "New lead — "+e.extract.fleetSize+" trucks, "+e.extract.frequency+". Create an inquiry?";
+  if(e.scenario==="followup")return "No reply in 5 days — send a follow-up?";
+  if(e.scenario==="schedule")return "Customer wants "+e.suggest.label+". Update their service days?";
+  if(e.scenario==="billing")return "Customer wants invoices sent to "+e.suggest.billingEmail+". Update billing email?";return"";}
+function emailActions(e){if(e.status==="handled")return '<span class="emhandled">✓ Handled</span>';var a=[];
+  if(e.scenario==="inquiry")a.push('<button class="btn sm primary" onclick="createInquiryFromEmail(\''+e.id+'\')">Create inquiry</button>');
+  if(e.scenario==="followup")a.push('<button class="btn sm primary" onclick="followupFromEmail(\''+e.id+'\')">Create follow-up task</button>');
+  if(e.scenario==="schedule")a.push('<button class="btn sm primary" onclick="applyScheduleSuggestion(\''+e.id+'\')">Update service days</button>');
+  if(e.scenario==="billing")a.push('<button class="btn sm primary" onclick="applyBillingSuggestion(\''+e.id+'\')">Update billing email</button>');
+  a.push('<button class="btn sm" onclick="draftReply(\''+e.id+'\')">Draft reply</button>');
+  a.push('<button class="btn sm" onclick="markEmailHandled(\''+e.id+'\')">Mark handled</button>');
+  return a.join("");}
+function emailRow(e){var sugg=emailSuggestion(e);
+  return '<div class="emrow"><div class="emhd"><div class="emav" style="background:'+colorFor(e.company||e.from)+'">'+initials(e.from)+'</div><div style="flex:1;min-width:0"><div class="emfrom">'+esc(e.from)+(e.company?' <span style="color:var(--muted);font-weight:400">· '+esc(e.company)+'</span>':"")+'</div><div class="emsub">'+esc(e.subject)+'</div></div><div class="emtime">'+esc(e.received)+'</div></div><div class="emprev">'+esc(e.preview)+'</div>'+(e.related?'<div class="emrel">Related: '+esc(e.related.label)+'</div>':"")+(sugg?'<div class="emsugg">'+sugg+'</div>':"")+'<div class="emacts">'+emailActions(e)+'</div></div>';}
+function renderInbox(){var c=emailCounts();
+  var list=EMAILS.filter(function(e){if(emailFilter==="needs")return e.status==="needs-reply";if(emailFilter==="new")return e.scenario==="inquiry";return true;});
+  var conn='<div class="emconn"><span class="emdot"></span><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+EMAILADDR+'</div><div style="font-size:11.5px;color:var(--muted)">Connected · synced just now · <span class="emdemo">Demo connection</span></div></div><button class="btn sm" onclick="syncEmail()">Sync</button></div>';
+  document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t"><div class="tk-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div><div><div class="dw-nm">Inbox</div><div class="dw-loc">'+c.needs+' need a reply</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
+   '<div class="dw-b">'+conn+'<div class="tkfilters">'+[["needs","Needs reply"],["new","New inquiries"],["all","All"]].map(function(fp){return '<button class="fchip'+(emailFilter===fp[0]?" on":"")+'" onclick="setEmailFilter(\''+fp[0]+'\')">'+fp[1]+'</button>';}).join("")+'</div>'+
+   '<div class="emlist">'+(list.length?list.map(emailRow).join(""):'<div class="empty">Nothing here.</div>')+'</div></div>';}
+function syncEmail(){toast("Synced (demo) — no new messages");}
+function markEmailHandled(id){var e=EMAILS.find(function(x){return x.id===id;});e.status="handled";saveEmails();afterEmailChange();toast("Marked handled");}
+function createInquiryFromEmail(id){var e=EMAILS.find(function(x){return x.id===id;});var x=e.extract||{};
+  if(!confirm("Create an inquiry for "+x.company+" from this email?"))return;
+  var inq={id:uid(),company:x.company,contact:x.contact||"",phone:"",email:x.email||e.fromEmail,source:"email",location:x.location||"",fleetSize:x.fleetSize||0,service:x.service||"Fleet wash",frequency:x.frequency||"",estValue:0,stage:"new",received:todayISO(),lastContacted:"",nextAction:"Reply and qualify",nextFollowup:addDays(todayISO(),1),notes:"Created from email: "+e.subject,lostReason:"",created:todayISO(),emailId:e.id};
+  INQUIRIES.unshift(inq);saveInquiries();e.status="handled";e.related={type:"inquiry",id:inq.id,label:inq.company};saveEmails();closeJob();setView("sales");openInquiry(inq.id);toast("Inquiry created from email");}
+function followupFromEmail(id){var e=EMAILS.find(function(x){return x.id===id;});var rel=e.related||null;
+  TASKS.unshift({id:uid(),title:"Follow up with "+(e.company||e.from),related:rel,due:addDays(todayISO(),1),dueTime:"",priority:"high",status:"todo",notes:"From email: "+e.subject,source:"email",created:todayISO()});saveTasks();updateTaskBadge();e.status="handled";saveEmails();afterEmailChange();toast("Follow-up task created");}
+function applyScheduleSuggestion(id){var e=EMAILS.find(function(x){return x.id===id;});var a=e.related&&DB.find(function(x){return x.id===e.related.id;});if(!a){toast("Customer not found");return;}
+  if(!confirm("Update "+a.name+"'s service days to "+e.suggest.label+"?\n\n(You're approving this change — the app won't update records on its own.)"))return;
+  a.scheduleMode="weekdays";a.days=e.suggest.days.slice();a.everyWeeks=1;save();e.status="handled";saveEmails();afterEmailChange();toast(a.name+" service days updated");}
+function applyBillingSuggestion(id){var e=EMAILS.find(function(x){return x.id===id;});var a=e.related&&DB.find(function(x){return x.id===e.related.id;});if(!a){toast("Customer not found");return;}
+  if(!confirm("Update "+a.name+"'s billing email to "+e.suggest.billingEmail+"?\n\n(You're approving this change.)"))return;
+  a.billingEmail=e.suggest.billingEmail;save();e.status="handled";saveEmails();afterEmailChange();toast(a.name+" billing email updated");}
+function genReply(e){var first=(e.from||"there").split(" ")[0];
+  if(e.scenario==="inquiry")return "Hi "+first+",\n\nThanks for reaching out about washing your fleet. We'd be glad to learn more about your "+(e.extract.fleetSize||"")+" trucks and put together pricing. Are you available for a quick call tomorrow afternoon?\n\nBest,\nPenn Mobile Wash";
+  if(e.scenario==="followup")return "Hi David,\n\nJust following up on the fleet washing quote we sent last week. Happy to answer any questions or adjust the scope. Would early next week work for a quick call?\n\nBest,\nPenn Mobile Wash";
+  if(e.scenario==="schedule")return "Hi "+first+",\n\nGot it — we'll plan on "+e.suggest.label+" mornings going forward and update your schedule on our end.\n\nThanks,\nPenn Mobile Wash";
+  if(e.scenario==="billing")return "Hi "+first+",\n\nThanks — we'll send all future invoices to "+e.suggest.billingEmail+".\n\nBest,\nPenn Mobile Wash";
+  return "Hi "+first+",\n\nThanks for your note — we'll get back to you shortly.\n\nBest,\nPenn Mobile Wash";}
+function draftReply(id){var e=EMAILS.find(function(x){return x.id===id;});var body=genReply(e);
+  openScrim('<div class="modal"><div class="mh"><h3>Draft reply to '+esc(e.from)+'</h3></div><div class="mb"><div class="emdemo" style="align-self:flex-start">AI-generated draft · demo</div><textarea id="rep_body" rows="9" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:inherit;font-size:14px">'+esc(body)+'</textarea></div><div class="mf" style="flex-wrap:wrap"><button class="btn ghost" onclick="closeScrim()">Cancel</button><button class="btn" onclick="copyReply()">Copy</button><button class="btn" onclick="closeScrim();toast(\'Draft saved (demo)\')">Save draft</button><button class="btn primary" onclick="sendReplyDemo()">Send</button></div></div>');}
+function copyReply(){var t=document.getElementById("rep_body");t.select();try{document.execCommand("copy");}catch(e){}toast("Copied");}
+function sendReplyDemo(){closeScrim();alert("Demo: live sending requires connecting your real mailbox. Nothing was actually sent.");}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function exportData(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const u=URL.createObjectURL(blob),el=document.createElement("a");el.href=u;el.download="penn-mobile-wash-"+todayISO()+".json";el.click();URL.revokeObjectURL(u);toast("Backup downloaded");}
 function importData(){const inp=document.createElement("input");inp.type="file";inp.accept="application/json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(Array.isArray(d)){DB=d;save();setView("dashboard");applyRole();toast("Backup restored");}else toast("Invalid file");}catch(x){toast("Couldn't read file");}};rd.readAsText(f);};inp.click();}
 document.querySelectorAll("#nav button, #tabbar button[data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
-updateTaskBadge();
+updateTaskBadge();updateInboxBadge();
 var _am=document.getElementById("addBtnM");if(_am)_am.onclick=()=>openModal(null);
 var _eb=document.getElementById("exportBtn");if(_eb)_eb.onclick=exportData;
 var _ib=document.getElementById("importBtn");if(_ib)_ib.onclick=importData;
