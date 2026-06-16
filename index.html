@@ -462,6 +462,7 @@
 @media (max-width:520px){.drawer{width:100vw;max-width:100vw}}
 @media (max-width:560px){.c-sched{display:none}.c-bal{width:76px;flex-basis:76px}.c-stat{width:88px;flex:0 0 88px}.filters{gap:6px}.fchip{padding:6px 11px;font-size:12.5px}}
 @media (max-width:560px){.content{padding:18px 14px 0}.kgrid{gap:10px}.dw-facts{gap:12px}}
+.dw-dateinput{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:14px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -548,7 +549,7 @@ let DB=load();
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}const s=seed();try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}return s;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 
-function nextDue(a){return a.lastVisit?addDays(a.lastVisit,a.freq):todayISO();}
+function nextDue(a){if(a.nextOverride)return a.nextOverride;return a.lastVisit?addDays(a.lastVisit,a.freq):todayISO();}
 function statusOf(a){const d=daysBetween(todayISO(),nextDue(a));
   if(d<0)return{k:"over",t:(-d)+"d overdue",c:"s-over",col:"var(--red)"};
   if(d===0)return{k:"due",t:"Due today",c:"s-due",col:"var(--amber)"};
@@ -744,7 +745,7 @@ function resetVisit(id){const a=DB.find(x=>x.id===id);a.units.forEach(u=>{u.wash
 function addUnit(id){const a=DB.find(x=>x.id===id);const n=prompt(uTab+" number:");if(!n)return;a.units.push({label:String(n).trim(),type:uTab,washed:false,washedAt:null,issue:null});save();openDetail(id);}
 function completeVisit(id){var a=DB.find(function(x){return x.id===id;});var c=counts(a);if(c.washed===0){toast("Mark some units first");return;}
   var entry={date:todayISO(),crew:a.crew||[],done:c.washed,total:c.total,units:a.units.filter(function(u){return u.washed;}).map(function(u){return u.label;}),issues:a.units.filter(function(u){return u.issue;}).map(function(u){return {label:u.label,issue:u.issue};})};
-  a.log.unshift(entry);a.lastVisit=todayISO();
+  a.log.unshift(entry);a.lastVisit=todayISO();a.nextOverride=null;a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:Math.round(revPerVisit(a))||300,date:todayISO(),dueDate:addDays(todayISO(),30),paid:false});
   a.units.forEach(function(u){u.washed=false;u.washedAt=null;});save();openReport(a,entry);}
 
 let pickedCrew=[];
@@ -1021,7 +1022,7 @@ function renderDashboard(){
     (att.length?'<div class="attn">'+att.slice(0,8).map(function(x){return '<div class="attn-row" data-id="'+x.id+'"><div class="attn-ic" style="'+sevStyle(x.sev)+'">'+x.ic+'</div><div style="min-width:0"><div class="t">'+x.t+'</div><div class="d">'+x.d+'</div></div><div class="go">View →</div></div>';}).join("")+'</div>'
       :'<div class="attn"><div class="empty" style="padding:24px">Nothing needs attention — you\'re all caught up.</div></div>')+'</div>';
   html+='<div class="sec"><div class="sec-h"><h2>Today\'s schedule</h2><span class="count">'+dueToday.length+'</span><div class="grow"></div><button class="link" onclick="setView(\'schedule\')">Open calendar</button></div>'+
-    '<div class="list">'+(todayJobs.length?todayJobs.map(function(a){var c=counts(a);return '<div class="row" data-id="'+a.id+'">'+av(a.name)+'<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+(a.location||"")+' · '+c.total+' units</div></div>'+crewStack(a.crew)+'<div style="width:118px;text-align:right">'+statusHTML(statusOf(a))+'</div></div>';}).join(""):'<div class="empty">No jobs due today — next ones are on the calendar.</div>')+'</div></div>';
+    '<div class="list">'+(todayJobs.length?todayJobs.map(function(a){var c=counts(a);return '<div class="row" data-id="'+a.id+'">'+av(a.name)+'<div class="grow"><div class="nm">'+a.name+'</div><div class="sub">'+(a.location||"")+' · '+c.total+' units</div></div>'+crewStack(a.crew)+'<div style="width:118px;text-align:right">'+statusHTML(jobStatusOf(a))+'</div></div>';}).join(""):'<div class="empty">No jobs due today — next ones are on the calendar.</div>')+'</div></div>';
   document.getElementById("dashboardView").innerHTML=html;
   document.querySelectorAll("#dashboardView .attn-row, #dashboardView .row").forEach(function(r){r.onclick=function(){openDetail(r.dataset.id);};});
 }
@@ -1030,19 +1031,22 @@ function receivablesHTML(){var ov=overdueInvoices();if(!ov.length&&!totalOutstan
    (ov.length?'<div class="list">'+ov.map(function(o){var late=daysBetween(o.i.dueDate,todayISO());return '<div class="row" data-id="'+o.a.id+'">'+av(o.a.name)+'<div class="grow"><div class="nm">'+o.a.name+'</div><div class="sub">Invoice #'+o.i.n+' · due '+fmt(o.i.dueDate)+'</div></div><div class="col" style="text-align:right;color:var(--red);font-weight:700">'+money(o.i.amount)+'</div><div style="width:84px;text-align:right;color:var(--red);font-size:12.5px">'+late+'d late</div></div>';}).join("")+'</div>':'<div class="empty">No overdue invoices.</div>')+'</div>';}
 var custFilter="all";
 function setCustFilter(f){custFilter=f;renderAccounts();}
-function invoicesHTML(a){var inv=a.invoices||[];if(!inv.length)return '<div class="block"><h3>Invoices</h3><div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div></div>';
-  return '<div class="block"><h3>Invoices</h3><div class="info">'+inv.map(function(i,k){var od=isInvOverdue(i);return '<div class="ir" style="align-items:center"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' · '+money(i.amount)+'</div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue · due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div><button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Mark unpaid":"Mark paid")+'</button></div>';}).join("")+'</div></div>';}
+function nextInvNum(a){var mx=1000;(a.invoices||[]).forEach(function(i){if(i.n>mx)mx=i.n;});return mx+1;}
+function createInvoice(id){var a=DB.find(function(x){return x.id===id;});a.invoices=a.invoices||[];a.invoices.unshift({n:nextInvNum(a),amount:Math.round(revPerVisit(a))||300,date:todayISO(),dueDate:addDays(todayISO(),30),paid:false});save();openDetail(id);toast("Invoice created");}
+function jobStatusOf(a){if((a.log||[]).some(function(l){return l.date===todayISO();}))return {k:"done",t:"Completed today",c:"s-ok",col:"var(--green)"};var active=a.active&&Object.keys(a.active).length>0;if(active||counts(a).washed>0)return {k:"prog",t:"In progress",c:"s-due",col:"var(--amber)"};return statusOf(a);}
+function invoicesHTML(a){var inv=a.invoices||[];var rows=inv.length?'<div class="info">'+inv.map(function(i,k){var od=isInvOverdue(i);return '<div class="ir" style="align-items:center"><div style="flex:1;min-width:0"><div style="font-weight:600">#'+i.n+' \u00b7 '+money(i.amount)+'</div><div style="font-size:11.5px;color:'+(od?"var(--red)":(i.paid?"var(--green)":"var(--muted)"))+'">'+(i.paid?"Paid":(od?"Overdue \u00b7 due "+fmt(i.dueDate):"Due "+fmt(i.dueDate)))+'</div></div><button class="btn sm" onclick="toggleInvoice(\''+a.id+'\','+k+')">'+(i.paid?"Mark unpaid":"Mark paid")+'</button></div>';}).join("")+'</div>':'<div class="empty" style="padding:4px 0;text-align:left">No invoices yet.</div>';
+  return '<div class="block"><h3>Invoices</h3>'+rows+'<button class="btn sm" style="margin-top:12px" onclick="createInvoice(\''+a.id+'\')">+ New invoice</button></div>';}
 function toggleInvoice(id,k){var a=DB.find(function(x){return x.id===id;});if(a.invoices&&a.invoices[k]){a.invoices[k].paid=!a.invoices[k].paid;save();openDetail(id);}}
-function openJob(id){var a=DB.find(function(x){return x.id===id;});if(!a)return;var st=statusOf(a),c=counts(a);
+function openJob(id){var a=DB.find(function(x){return x.id===id;});if(!a)return;var st=jobStatusOf(a),c=counts(a);
   document.getElementById("drawer").innerHTML='<div class="dw-h"><div class="dw-t">'+av(a.name)+'<div style="min-width:0"><div class="dw-nm">'+a.name+'</div><div class="dw-loc">'+(a.location||"No address")+'</div></div></div><button class="dw-x" onclick="closeJob()">&#10005;</button></div>'+
    '<div class="dw-b"><div style="margin-bottom:6px">'+statusHTML(st)+'</div>'+
    '<div class="dw-facts"><div><span>Service</span><b>'+FREQ[a.freq]+'</b></div><div><span>Units</span><b>'+c.total+'</b></div><div><span>Est. time</span><b>'+hrs(a.avgMin)+'</b></div><div><span>Next due</span><b style="color:'+st.col+'">'+fmt(nextDue(a))+'</b></div></div>'+
    '<div class="dw-sec">Crew</div>'+((a.crew&&a.crew.length)?'<div class="chips">'+a.crew.map(function(m){return '<span class="chip2"><span class="ca" style="background:var(--navy)">'+initials(m)+'</span>'+m+'</span>';}).join("")+'</div>':'<div class="dw-warn">⚠ No crew assigned</div>')+
-   '<div class="dw-sec">Reschedule next visit</div><div class="dw-resched"><input type="date" id="dwDate" value="'+nextDue(a)+'"><button class="btn sm" onclick="reschedule(\''+a.id+'\')">Update</button></div>'+
+   '<div class="dw-sec">Reschedule</div><input type="date" id="dwDate" value="'+nextDue(a)+'" class="dw-dateinput"><div class="dw-resched"><button class="btn sm" onclick="reschedule(\''+a.id+'\',\'once\')">Just this visit</button><button class="btn sm" onclick="reschedule(\''+a.id+'\',\'series\')">This + future</button></div>'+
    '</div><div class="dw-f"><button class="btn" onclick="closeJob()">Close</button><button class="btn primary" onclick="var i=\''+a.id+'\';closeJob();openDetail(i)">Open customer</button></div>';
   document.getElementById("drawer").classList.remove("hidden");document.getElementById("drawerScrim").classList.remove("hidden");}
 function closeJob(){document.getElementById("drawer").classList.add("hidden");document.getElementById("drawerScrim").classList.add("hidden");}
-function reschedule(id){var a=DB.find(function(x){return x.id===id;});var d=document.getElementById("dwDate").value;if(!d)return;a.lastVisit=addDays(d,-a.freq);save();toast("Rescheduled to "+fmt(d));closeJob();if(curView==="schedule")renderSchedule();}
+function reschedule(id,mode){var a=DB.find(function(x){return x.id===id;});var d=document.getElementById("dwDate").value;if(!d)return;if(mode==="series"){a.lastVisit=addDays(d,-a.freq);a.nextOverride=null;toast("Recurring schedule moved to "+fmt(d));}else{a.nextOverride=d;toast("This visit moved to "+fmt(d));}save();closeJob();if(curView==="schedule")renderSchedule();if(curView==="dashboard")renderDashboard();}
 let toastT;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 function v(id){return document.getElementById(id).value;}
 function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
